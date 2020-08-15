@@ -1,0 +1,15 @@
+[package]
+name = "sm64gs2pc"
+version = "0.1.0"
+authors = ["Benjamin Levy <blevy@protonmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+walkdir = "2.3.1"
+snafu = "0.6.8"
+
+[dependencies.clang]
+version = "1.0.0"
+features = ["clang_10_0"]
