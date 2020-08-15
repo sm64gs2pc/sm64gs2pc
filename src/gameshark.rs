@@ -42,7 +42,7 @@ pub enum ParseError {
 }
 
 /// A parsed Nintendo 64 GameShark code
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Code {
     /// 8-bit Write
     ///
@@ -105,6 +105,19 @@ pub enum Code {
     /// Execute the code `ZZZZZZZZ ZZZZ` if and only if the value in address
     /// `XXXXXX` is *not* `YYYY`.
     IfNotEq16 { addr: Addr, value: u16 },
+}
+
+impl Code {
+    pub fn addr(self) -> Addr {
+        match self {
+            Code::Write8 { addr, .. } => addr,
+            Code::Write16 { addr, .. } => addr,
+            Code::IfEq8 { addr, .. } => addr,
+            Code::IfEq16 { addr, .. } => addr,
+            Code::IfNotEq8 { addr, .. } => addr,
+            Code::IfNotEq16 { addr, .. } => addr,
+        }
+    }
 }
 
 impl FromStr for Code {

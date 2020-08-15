@@ -142,15 +142,15 @@ enum DeclKind {
 }
 
 #[derive(Debug)]
-struct Decl {
+pub struct Decl {
     kind: DeclKind,
-    name: String,
-    addr: Addr,
+    pub name: String,
+    pub addr: Addr,
 }
 
 #[derive(Debug, Default)]
 pub struct DecompData {
-    decls: BTreeMap<Addr, Decl>,
+    pub decls: BTreeMap<Addr, Decl>,
     structs: HashMap<String, Struct>,
 }
 
