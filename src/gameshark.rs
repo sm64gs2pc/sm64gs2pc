@@ -26,7 +26,6 @@ use crate::Addr;
 use std::str::FromStr;
 
 use snafu::ensure;
-use snafu::OptionExt;
 use snafu::ResultExt;
 use snafu::Snafu;
 
@@ -115,11 +114,10 @@ impl FromStr for Code {
         // Split `TTXXXXXX YYYY` into `TTXXXXXX` and `YYYY`
         let tokens = s.split(' ').collect::<Vec<&str>>();
         let (type_addr, value) = if let &[type_addr, value] = tokens.as_slice() {
-            Some((type_addr, value))
+            Ok((type_addr, value))
         } else {
-            None
-        }
-        .context(FormatError)?;
+            Err(ParseError::FormatError)
+        }?;
 
         ensure!(type_addr.len() == 8, FormatError);
         ensure!(value.len() == 4, FormatError);
