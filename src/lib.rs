@@ -3,6 +3,7 @@ pub mod gameshark;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::ffi::OsStr;
+use std::fmt;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
@@ -11,21 +12,21 @@ use std::process::Stdio;
 
 use walkdir::WalkDir;
 
-type Addr = u32;
+type SizeInt = u32;
 
 #[derive(Debug)]
-enum Type {
+pub enum Type {
     AnonStruct(Struct),
     Struct {
         name: String,
     },
     Array {
         element_type: Box<Type>,
-        num_elements: usize,
+        num_elements: SizeInt,
     },
     Int {
         signed: bool,
-        num_bytes: usize,
+        num_bytes: SizeInt,
     },
     Pointer {
         inner_type: Box<Type>,
@@ -82,7 +83,7 @@ impl Type {
             clang::TypeKind::Record => Type::AnonStruct(Struct::from_clang(typ)),
             clang::TypeKind::ConstantArray => Type::Array {
                 element_type: Box::new(Type::from_clang(typ.get_element_type().unwrap())),
-                num_elements: typ.get_size().unwrap(),
+                num_elements: typ.get_size().unwrap() as SizeInt,
             },
             clang::TypeKind::Typedef => Type::from_clang(
                 typ.get_declaration()
@@ -104,14 +105,14 @@ impl Type {
 }
 
 #[derive(Debug)]
-struct StructField {
-    offset: Addr,
-    name: String,
-    typ: Type,
+pub struct StructField {
+    pub offset: SizeInt,
+    pub name: String,
+    pub typ: Type,
 }
 
 #[derive(Debug)]
-struct Struct {
+pub struct Struct {
     fields: Vec<StructField>,
 }
 
@@ -124,7 +125,7 @@ impl Struct {
             .map(|field| {
                 let name = field.get_name().unwrap();
                 StructField {
-                    offset: typ.get_offsetof(&name).unwrap() as Addr,
+                    offset: typ.get_offsetof(&name).unwrap() as SizeInt / 8,
                     name,
                     typ: Type::from_clang(field.get_type().unwrap()),
                 }
@@ -136,21 +137,21 @@ impl Struct {
 }
 
 #[derive(Debug)]
-enum DeclKind {
+pub enum DeclKind {
     Fn,
     Var { typ: Type },
 }
 
 #[derive(Debug)]
 pub struct Decl {
-    kind: DeclKind,
+    pub kind: DeclKind,
     pub name: String,
-    pub addr: Addr,
+    pub addr: SizeInt,
 }
 
 #[derive(Debug, Default)]
 pub struct DecompData {
-    pub decls: BTreeMap<Addr, Decl>,
+    pub decls: BTreeMap<SizeInt, Decl>,
     structs: HashMap<String, Struct>,
 }
 
@@ -181,7 +182,7 @@ impl DecompData {
             .unwrap()
             .success());
 
-        let mut syms = BTreeMap::<String, Addr>::new();
+        let mut syms = BTreeMap::<String, SizeInt>::new();
 
         for entry in WalkDir::new(decomp_path.join("build/us")) {
             let entry = entry.unwrap();
@@ -202,7 +203,7 @@ impl DecompData {
                         Some(addr) => addr,
                         None => continue,
                     };
-                    let addr = match Addr::from_str_radix(addr, 0x10) {
+                    let addr = match SizeInt::from_str_radix(addr, 0x10) {
                         Ok(addr) => addr,
                         Err(_) => continue,
                     };
@@ -305,5 +306,140 @@ impl DecompData {
         }
 
         decomp_data
+    }
+
+    fn size_of_type(&self, typ: &Type) -> Option<SizeInt> {
+        match typ {
+            Type::AnonStruct(struct_) => self.size_of_struct(&struct_),
+            Type::Struct { name } => {
+                let struct_ = self.structs.get(name)?;
+                self.size_of_struct(struct_)
+            }
+            Type::Array {
+                element_type,
+                num_elements,
+            } => self
+                .size_of_type(&*element_type)?
+                .checked_mul(*num_elements),
+            Type::Int { num_bytes, .. } => Some(*num_bytes),
+            Type::Pointer { .. } => Some(8),
+            Type::Float => Some(4),
+            Type::Double => Some(8),
+            Type::Ignored => None,
+        }
+    }
+
+    fn size_of_struct(&self, struct_: &Struct) -> Option<SizeInt> {
+        struct_
+            .fields
+            .iter()
+            .map(|field| self.size_of_type(&field.typ))
+            .sum()
+    }
+
+    pub fn addr_to_lvalue(&self, addr: SizeInt) -> Option<LeftValue> {
+        let decl = self.decls.values().rev().find(|decl| decl.addr <= addr)?;
+
+        let typ = match &decl.kind {
+            DeclKind::Fn => unimplemented!("function patching"),
+            DeclKind::Var { typ } => typ,
+        };
+
+        let accum = LeftValue::Ident {
+            name: decl.name.clone(),
+        };
+
+        self.addr_and_type_to_lvalue(accum, addr, typ, decl.addr)
+    }
+
+    fn addr_and_struct_to_lvalue(
+        &self,
+        accum: LeftValue,
+        addr: SizeInt,
+        struct_: &Struct,
+        type_addr: SizeInt,
+    ) -> Option<LeftValue> {
+        let field = struct_
+            .fields
+            .iter()
+            .rev()
+            .find(|field| type_addr + field.offset <= addr)?;
+
+        let accum = LeftValue::StructField {
+            struct_: Box::new(accum),
+            field_name: field.name.clone(),
+        };
+
+        let type_addr = type_addr + field.offset;
+
+        self.addr_and_type_to_lvalue(accum, addr, &field.typ, type_addr)
+    }
+
+    fn addr_and_type_to_lvalue(
+        &self,
+        accum: LeftValue,
+        addr: SizeInt,
+        typ: &Type,
+        type_addr: SizeInt,
+    ) -> Option<LeftValue> {
+        match typ {
+            Type::AnonStruct(struct_) => {
+                self.addr_and_struct_to_lvalue(accum, addr, struct_, type_addr)
+            }
+            Type::Struct { name } => {
+                let struct_ = self.structs.get(name)?;
+                self.addr_and_struct_to_lvalue(accum, addr, struct_, type_addr)
+            }
+            Type::Int { .. } | Type::Pointer { .. } | Type::Float | Type::Double => Some(accum),
+            Type::Array {
+                element_type,
+                num_elements,
+            } => {
+                let element_type_size = self.size_of_type(element_type)?;
+                let index = (addr - type_addr) / element_type_size;
+
+                if index >= *num_elements {
+                    return None;
+                }
+
+                let accum = LeftValue::ArrayIndex {
+                    array: Box::new(accum),
+                    index,
+                };
+
+                let type_addr = type_addr + index * element_type_size;
+
+                self.addr_and_type_to_lvalue(accum, addr, element_type, type_addr)
+            }
+            Type::Ignored => unimplemented!("ignored type"),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum LeftValue {
+    Ident {
+        name: String,
+    },
+    ArrayIndex {
+        array: Box<LeftValue>,
+        index: SizeInt,
+    },
+    StructField {
+        struct_: Box<LeftValue>,
+        field_name: String,
+    },
+}
+
+impl fmt::Display for LeftValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            LeftValue::Ident { name } => write!(f, "{}", name),
+            LeftValue::ArrayIndex { array, index } => write!(f, "{}[{}]", array, index),
+            LeftValue::StructField {
+                struct_,
+                field_name,
+            } => write!(f, "{}.{}", struct_, field_name),
+        }
     }
 }

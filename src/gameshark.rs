@@ -21,7 +21,7 @@
 //! );
 //! ```
 
-use crate::Addr;
+use crate::SizeInt;
 
 use std::str::FromStr;
 
@@ -51,7 +51,7 @@ pub enum Code {
     /// ```
     ///
     /// Writes `YY` to address `XXXXXX`.
-    Write8 { addr: Addr, value: u8 },
+    Write8 { addr: SizeInt, value: u8 },
 
     /// 16-bit Write
     ///
@@ -60,7 +60,7 @@ pub enum Code {
     /// ```
     ///
     /// Writes `YYYY` to address `XXXXXX`.
-    Write16 { addr: Addr, value: u16 },
+    Write16 { addr: SizeInt, value: u16 },
 
     /// 8-bit check equal
     ///
@@ -71,7 +71,7 @@ pub enum Code {
     ///
     /// Execute the code `ZZZZZZZZ ZZZZ` if and only if the value in address
     /// `XXXXXX` is `YY`.
-    IfEq8 { addr: Addr, value: u8 },
+    IfEq8 { addr: SizeInt, value: u8 },
 
     /// 16-bit check equal
     ///
@@ -82,7 +82,7 @@ pub enum Code {
     ///
     /// Execute the code `ZZZZZZZZ ZZZZ` if and only if the value in address
     /// `XXXXXX` is `YYYY`.
-    IfEq16 { addr: Addr, value: u16 },
+    IfEq16 { addr: SizeInt, value: u16 },
 
     /// 8-bit check unequal
     ///
@@ -93,7 +93,7 @@ pub enum Code {
     ///
     /// Execute the code `ZZZZZZZZ ZZZZ` if and only if the value in address
     /// `XXXXXX` is *not* `YY`.
-    IfNotEq8 { addr: Addr, value: u8 },
+    IfNotEq8 { addr: SizeInt, value: u8 },
 
     /// 16-bit check unequal
     ///
@@ -104,11 +104,11 @@ pub enum Code {
     ///
     /// Execute the code `ZZZZZZZZ ZZZZ` if and only if the value in address
     /// `XXXXXX` is *not* `YYYY`.
-    IfNotEq16 { addr: Addr, value: u16 },
+    IfNotEq16 { addr: SizeInt, value: u16 },
 }
 
 impl Code {
-    pub fn addr(self) -> Addr {
+    pub fn addr(self) -> SizeInt {
         match self {
             Code::Write8 { addr, .. } => addr,
             Code::Write16 { addr, .. } => addr,
@@ -116,6 +116,17 @@ impl Code {
             Code::IfEq16 { addr, .. } => addr,
             Code::IfNotEq8 { addr, .. } => addr,
             Code::IfNotEq16 { addr, .. } => addr,
+        }
+    }
+
+    pub fn value(self) -> u16 {
+        match self {
+            Code::Write8 { value, .. } => value as u16,
+            Code::Write16 { value, .. } => value,
+            Code::IfEq8 { value, .. } => value as u16,
+            Code::IfEq16 { value, .. } => value,
+            Code::IfNotEq8 { value, .. } => value as u16,
+            Code::IfNotEq16 { value, .. } => value,
         }
     }
 }
@@ -136,7 +147,7 @@ impl FromStr for Code {
         ensure!(value.len() == 4, FormatError);
 
         // Parse code-type address and value
-        let type_addr = Addr::from_str_radix(type_addr, 0x10).context(ParseIntError)?;
+        let type_addr = SizeInt::from_str_radix(type_addr, 0x10).context(ParseIntError)?;
         let value16 = u16::from_str_radix(value, 0x10).context(ParseIntError)?;
         let value8 = value16 as u8;
 

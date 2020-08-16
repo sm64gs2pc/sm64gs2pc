@@ -3,9 +3,7 @@ use sm64gs2pc::DecompData;
 
 fn main() {
     let decomp_data = DecompData::load();
-    let codes = "8129CE9C 2400\n\
-                 8129CEC0 2400\n\
-                 D033AFA1 0020\n\
+    let codes = "D033AFA1 0020\n\
                  8033B21E 0008\n\
                  D033AFA1 0020\n\
                  8133B262 0000\n\
@@ -18,13 +16,29 @@ fn main() {
         .parse::<gameshark::Codes>()
         .unwrap();
     for code in codes.0 {
-        let (_, decl) = decomp_data
-            .decls
-            .iter()
-            .rev()
-            .find(|(addr, _)| **addr <= code.addr() + 0x80000000)
-            .unwrap();
-        println!("name: {}", decl.name);
+        let addr = code.addr() + 0x80000000;
+        let lvalue = decomp_data.addr_to_lvalue(addr).unwrap();
+
+        match code {
+            gameshark::Code::Write8 { value, .. } => {
+                println!("{} = {:#x};", lvalue, value);
+            }
+            gameshark::Code::Write16 { value, .. } => {
+                println!("{} = {:#x};", lvalue, value);
+            }
+            gameshark::Code::IfEq8 { value, .. } => {
+                println!("if ({} == {:#x})", lvalue, value);
+            }
+            gameshark::Code::IfEq16 { value, .. } => {
+                println!("if ({} == {:#x})", lvalue, value);
+            }
+            gameshark::Code::IfNotEq8 { value, .. } => {
+                println!("if ({} != {:#x})", lvalue, value);
+            }
+            gameshark::Code::IfNotEq16 { value, .. } => {
+                println!("if ({} != {:#x})", lvalue, value);
+            }
+        }
     }
-    println!("{:#?}", decomp_data);
+    //println!("{:#?}", decomp_data);
 }
