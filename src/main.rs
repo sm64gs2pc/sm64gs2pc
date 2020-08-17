@@ -19,6 +19,8 @@ fn main() {
         let addr = code.addr() + 0x80000000;
         let lvalue = decomp_data.addr_to_lvalue(addr).unwrap();
 
+        print!("/* {} */ ", code);
+
         match code {
             gameshark::Code::Write8 { value, .. } => {
                 println!("{} = {:#x};", lvalue, value);

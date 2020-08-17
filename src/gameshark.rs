@@ -23,6 +23,7 @@
 
 use crate::SizeInt;
 
+use std::fmt;
 use std::str::FromStr;
 
 use snafu::ensure;
@@ -183,6 +184,19 @@ impl FromStr for Code {
                 value: value16,
             }),
             _ => Err(ParseError::CodeTypeError),
+        }
+    }
+}
+
+impl fmt::Display for Code {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Code::Write8 { addr, value } => write!(f, "80{:06X} {:04X}", addr, value),
+            Code::Write16 { addr, value } => write!(f, "81{:06X} {:04X}", addr, value),
+            Code::IfEq8 { addr, value } => write!(f, "D0{:06X} {:04X}", addr, value),
+            Code::IfEq16 { addr, value } => write!(f, "D1{:06X} {:04X}", addr, value),
+            Code::IfNotEq8 { addr, value } => write!(f, "D2{:06X} {:04X}", addr, value),
+            Code::IfNotEq16 { addr, value } => write!(f, "D3{:06X} {:04X}", addr, value),
         }
     }
 }
