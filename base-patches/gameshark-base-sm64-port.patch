@@ -1,0 +1,45 @@
+diff --git a/src/game/game_init.c b/src/game/game_init.c
+index 3ce5f2d..ecd64c4 100644
+--- a/src/game/game_init.c
++++ b/src/game/game_init.c
+@@ -19,6 +19,7 @@
+ #include "segment2.h"
+ #include "segment_symbols.h"
+ #include "thread6.h"
++#include "gameshark.h"
+ #include <prevent_bss_reordering.h>
+ 
+ // FIXME: I'm not sure all of these variables belong in this file, but I don't
+@@ -645,6 +646,7 @@ void game_loop_one_iteration(void) {
+         read_controller_inputs();
+         levelCommandAddr = level_script_execute(levelCommandAddr);
+         display_and_vsync();
++        run_gameshark_cheats();
+ 
+         // when debug info is enabled, print the "BUF %d" information.
+         if (gShowDebugText) {
+diff --git a/src/game/gameshark.c b/src/game/gameshark.c
+new file mode 100644
+index 0000000..0bd5aba
+--- /dev/null
++++ b/src/game/gameshark.c
+@@ -0,0 +1,7 @@
++#ifndef GAMESHARK_H
++#define GAMESHARK_H
++
++void run_gameshark_cheats(void) {
++}
++
++#endif // GAMESHARK_H
+diff --git a/src/game/gameshark.h b/src/game/gameshark.h
+new file mode 100644
+index 0000000..5db93fc
+--- /dev/null
++++ b/src/game/gameshark.h
+@@ -0,0 +1,6 @@
++#ifndef GAMESHARK_H
++#define GAMESHARK_H
++
++void run_gameshark_cheats(void);
++
++#endif // GAMESHARK_H
