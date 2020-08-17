@@ -15,32 +15,6 @@ fn main() {
                  81361414 0005"
         .parse::<gameshark::Codes>()
         .unwrap();
-    for code in codes.0 {
-        let addr = code.addr() + 0x80000000;
-        let lvalue = decomp_data.addr_to_lvalue(addr).unwrap();
-
-        print!("/* {} */ ", code);
-
-        match code {
-            gameshark::Code::Write8 { value, .. } => {
-                println!("{} = {:#x};", lvalue, value);
-            }
-            gameshark::Code::Write16 { value, .. } => {
-                println!("{} = {:#x};", lvalue, value);
-            }
-            gameshark::Code::IfEq8 { value, .. } => {
-                println!("if ({} == {:#x})", lvalue, value);
-            }
-            gameshark::Code::IfEq16 { value, .. } => {
-                println!("if ({} == {:#x})", lvalue, value);
-            }
-            gameshark::Code::IfNotEq8 { value, .. } => {
-                println!("if ({} != {:#x})", lvalue, value);
-            }
-            gameshark::Code::IfNotEq16 { value, .. } => {
-                println!("if ({} != {:#x})", lvalue, value);
-            }
-        }
-    }
-    //println!("{:#?}", decomp_data);
+    let patch = decomp_data.gs_codes_to_patch(codes).unwrap();
+    println!("{}", patch);
 }

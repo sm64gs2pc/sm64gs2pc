@@ -1,5 +1,6 @@
 pub mod gameshark;
 
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::ffi::OsStr;
@@ -7,6 +8,7 @@ use std::fmt;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
+use std::iter::once;
 use std::process::Command;
 use std::process::Stdio;
 
@@ -15,7 +17,7 @@ use walkdir::WalkDir;
 type SizeInt = u32;
 
 #[derive(Debug)]
-pub enum Type {
+enum Type {
     AnonStruct(Struct),
     Struct {
         name: String,
@@ -105,14 +107,14 @@ impl Type {
 }
 
 #[derive(Debug)]
-pub struct StructField {
-    pub offset: SizeInt,
-    pub name: String,
-    pub typ: Type,
+struct StructField {
+    offset: SizeInt,
+    name: String,
+    typ: Type,
 }
 
 #[derive(Debug)]
-pub struct Struct {
+struct Struct {
     fields: Vec<StructField>,
 }
 
@@ -137,21 +139,21 @@ impl Struct {
 }
 
 #[derive(Debug)]
-pub enum DeclKind {
+enum DeclKind {
     Fn,
     Var { typ: Type },
 }
 
 #[derive(Debug)]
-pub struct Decl {
-    pub kind: DeclKind,
-    pub name: String,
-    pub addr: SizeInt,
+struct Decl {
+    kind: DeclKind,
+    name: String,
+    addr: SizeInt,
 }
 
 #[derive(Debug, Default)]
 pub struct DecompData {
-    pub decls: BTreeMap<SizeInt, Decl>,
+    decls: BTreeMap<SizeInt, Decl>,
     structs: HashMap<String, Struct>,
 }
 
@@ -337,7 +339,7 @@ impl DecompData {
             .sum()
     }
 
-    pub fn addr_to_lvalue(&self, addr: SizeInt) -> Option<LeftValue> {
+    fn addr_to_lvalue(&self, addr: SizeInt) -> Option<LeftValue> {
         let decl = self.decls.values().rev().find(|decl| decl.addr <= addr)?;
 
         let typ = match &decl.kind {
@@ -414,10 +416,81 @@ impl DecompData {
             Type::Ignored => unimplemented!("ignored type"),
         }
     }
+
+    /// Convert a GameShark code to a line of C source code
+    fn gs_code_to_c(&self, code: gameshark::Code) -> Option<String> {
+        let addr = code.addr() + 0x80000000;
+        let lvalue = self.addr_to_lvalue(addr)?;
+
+        let c_source = match code {
+            gameshark::Code::Write8 { value, .. } => format!("{} = {:#x};", lvalue, value),
+            gameshark::Code::Write16 { value, .. } => format!("{} = {:#x};", lvalue, value),
+            gameshark::Code::IfEq8 { value, .. } => format!("if ({} == {:#x})", lvalue, value),
+            gameshark::Code::IfEq16 { value, .. } => format!("if ({} == {:#x})", lvalue, value),
+            gameshark::Code::IfNotEq8 { value, .. } => format!("if ({} != {:#x})", lvalue, value),
+            gameshark::Code::IfNotEq16 { value, .. } => format!("if ({} != {:#x})", lvalue, value),
+        };
+
+        let c_source = format!("/* {} */ {}", code, c_source);
+        Some(c_source)
+    }
+
+    /// Convert GameShark codes to a patch in the unified diff format
+    pub fn gs_codes_to_patch(&self, codes: gameshark::Codes) -> Option<String> {
+        // Added C source code lines
+        let added_lines = codes
+            .0
+            .into_iter()
+            .map(|code| {
+                // Convert to C and indent
+                let line = self.gs_code_to_c(code)?;
+                let line = format!("    {}", line);
+                Some(line)
+            })
+            // Have to create owned `String`s since `patch::Line` requires
+            // `&str` which needs an owned value to reference
+            .collect::<Option<Vec<String>>>()?;
+
+        // Added C source code `patch::Line`s
+        let added_lines = added_lines.iter().map(|line| patch::Line::Add(line));
+
+        // All lines of patch
+        let lines = once(patch::Line::Context("void run_gameshark_cheats(void) {"))
+            // Add blank line between cheats
+            .chain(once(patch::Line::Add("")))
+            // Add cheat
+            .chain(added_lines)
+            // Detect blank line between cheats
+            .chain(once(patch::Line::Context("")))
+            .collect::<Vec<patch::Line>>();
+
+        let patch = patch::Patch {
+            old: patch::File {
+                path: Cow::from("a/src/game/gameshark.c"),
+                meta: None,
+            },
+            new: patch::File {
+                path: Cow::from("b/src/game/gameshark.c"),
+                meta: None,
+            },
+            hunks: vec![patch::Hunk {
+                old_range: patch::Range { start: 4, count: 2 },
+                new_range: patch::Range {
+                    start: 4,
+                    count: lines.len() as u64,
+                },
+                lines,
+            }],
+            end_newline: true,
+        }
+        .to_string();
+
+        Some(patch)
+    }
 }
 
 #[derive(Debug)]
-pub enum LeftValue {
+enum LeftValue {
     Ident {
         name: String,
     },
