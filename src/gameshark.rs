@@ -21,7 +21,7 @@
 //! );
 //! ```
 
-use crate::SizeInt;
+use crate::typ::SizeInt;
 
 use std::fmt;
 use std::str::FromStr;
@@ -117,17 +117,6 @@ impl Code {
             Code::IfEq16 { addr, .. } => addr,
             Code::IfNotEq8 { addr, .. } => addr,
             Code::IfNotEq16 { addr, .. } => addr,
-        }
-    }
-
-    pub fn value(self) -> u16 {
-        match self {
-            Code::Write8 { value, .. } => value as u16,
-            Code::Write16 { value, .. } => value,
-            Code::IfEq8 { value, .. } => value as u16,
-            Code::IfEq16 { value, .. } => value,
-            Code::IfNotEq8 { value, .. } => value as u16,
-            Code::IfNotEq16 { value, .. } => value,
         }
     }
 }
