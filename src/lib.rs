@@ -347,8 +347,12 @@ impl DecompData {
             DeclKind::Var { typ } => typ,
         };
 
-        let accum = LeftValue::Ident {
-            name: decl.name.clone(),
+        let accum = LeftValue {
+            kind: LeftValueKind::Ident {
+                name: decl.name.clone(),
+            },
+            size: self.size_of_type(typ)?,
+            addr: decl.addr,
         };
 
         self.addr_and_type_to_lvalue(accum, addr, typ, decl.addr)
@@ -359,22 +363,26 @@ impl DecompData {
         accum: LeftValue,
         addr: SizeInt,
         struct_: &Struct,
-        type_addr: SizeInt,
+        accum_addr: SizeInt,
     ) -> Option<LeftValue> {
         let field = struct_
             .fields
             .iter()
             .rev()
-            .find(|field| type_addr + field.offset <= addr)?;
+            .find(|field| accum_addr + field.offset <= addr)?;
 
-        let accum = LeftValue::StructField {
-            struct_: Box::new(accum),
-            field_name: field.name.clone(),
+        let accum_addr = accum_addr + field.offset;
+
+        let accum = LeftValue {
+            kind: LeftValueKind::StructField {
+                struct_: Box::new(accum),
+                field_name: field.name.clone(),
+            },
+            size: self.size_of_type(&field.typ)?,
+            addr: accum_addr,
         };
 
-        let type_addr = type_addr + field.offset;
-
-        self.addr_and_type_to_lvalue(accum, addr, &field.typ, type_addr)
+        self.addr_and_type_to_lvalue(accum, addr, &field.typ, accum_addr)
     }
 
     fn addr_and_type_to_lvalue(
@@ -382,15 +390,15 @@ impl DecompData {
         accum: LeftValue,
         addr: SizeInt,
         typ: &Type,
-        type_addr: SizeInt,
+        accum_addr: SizeInt,
     ) -> Option<LeftValue> {
         match typ {
             Type::AnonStruct(struct_) => {
-                self.addr_and_struct_to_lvalue(accum, addr, struct_, type_addr)
+                self.addr_and_struct_to_lvalue(accum, addr, struct_, accum_addr)
             }
             Type::Struct { name } => {
                 let struct_ = self.structs.get(name)?;
-                self.addr_and_struct_to_lvalue(accum, addr, struct_, type_addr)
+                self.addr_and_struct_to_lvalue(accum, addr, struct_, accum_addr)
             }
             Type::Int { .. } | Type::Pointer { .. } | Type::Float | Type::Double => Some(accum),
             Type::Array {
@@ -398,20 +406,24 @@ impl DecompData {
                 num_elements,
             } => {
                 let element_type_size = self.size_of_type(element_type)?;
-                let index = (addr - type_addr) / element_type_size;
+                let index = (addr - accum_addr) / element_type_size;
 
                 if index >= *num_elements {
                     return None;
                 }
 
-                let accum = LeftValue::ArrayIndex {
-                    array: Box::new(accum),
-                    index,
+                let accum_addr = accum_addr + index * element_type_size;
+
+                let accum = LeftValue {
+                    kind: LeftValueKind::ArrayIndex {
+                        array: Box::new(accum),
+                        index,
+                    },
+                    size: element_type_size,
+                    addr: accum_addr,
                 };
 
-                let type_addr = type_addr + index * element_type_size;
-
-                self.addr_and_type_to_lvalue(accum, addr, element_type, type_addr)
+                self.addr_and_type_to_lvalue(accum, addr, element_type, accum_addr)
             }
             Type::Ignored => unimplemented!("ignored type"),
         }
@@ -423,12 +435,24 @@ impl DecompData {
         let lvalue = self.addr_to_lvalue(addr)?;
 
         let c_source = match code {
-            gameshark::Code::Write8 { value, .. } => format!("{} = {:#x};", lvalue, value),
-            gameshark::Code::Write16 { value, .. } => format!("{} = {:#x};", lvalue, value),
-            gameshark::Code::IfEq8 { value, .. } => format!("if ({} == {:#x})", lvalue, value),
-            gameshark::Code::IfEq16 { value, .. } => format!("if ({} == {:#x})", lvalue, value),
-            gameshark::Code::IfNotEq8 { value, .. } => format!("if ({} != {:#x})", lvalue, value),
-            gameshark::Code::IfNotEq16 { value, .. } => format!("if ({} != {:#x})", lvalue, value),
+            gameshark::Code::Write8 { value, .. } => {
+                format_lvalue_write(&lvalue, 1, value as u64, addr)
+            }
+            gameshark::Code::Write16 { value, .. } => {
+                format_lvalue_write(&lvalue, 2, value as u64, addr)
+            }
+            gameshark::Code::IfEq8 { value, .. } => {
+                format_lvalue_check(&lvalue, 1, value as u64, addr, true)
+            }
+            gameshark::Code::IfEq16 { value, .. } => {
+                format_lvalue_check(&lvalue, 2, value as u64, addr, true)
+            }
+            gameshark::Code::IfNotEq8 { value, .. } => {
+                format_lvalue_check(&lvalue, 1, value as u64, addr, false)
+            }
+            gameshark::Code::IfNotEq16 { value, .. } => {
+                format_lvalue_check(&lvalue, 2, value as u64, addr, false)
+            }
         };
 
         let c_source = format!("/* {} */ {}", code, c_source);
@@ -489,8 +513,50 @@ impl DecompData {
     }
 }
 
+fn format_lvalue_write(
+    lvalue: &LeftValue,
+    num_bytes: SizeInt,
+    value: u64,
+    addr: SizeInt,
+) -> String {
+    let shift = (lvalue.size - num_bytes - (addr - lvalue.addr)) * 8;
+
+    format!(
+        "{} = ({} & {:#x}) | {:#x};",
+        lvalue,
+        lvalue,
+        !(0xffu64 << shift),
+        (value) << shift,
+    )
+}
+
+fn format_lvalue_check(
+    lvalue: &LeftValue,
+    num_bytes: SizeInt,
+    value: u64,
+    addr: SizeInt,
+    check_eq: bool,
+) -> String {
+    let shift = (lvalue.size - num_bytes - (addr - lvalue.addr)) * 8;
+
+    format!(
+        "if (({} & {:#x}) {} {:#x})",
+        lvalue,
+        (0xffu64 << shift),
+        if check_eq { "==" } else { "!=" },
+        (value) << shift,
+    )
+}
+
 #[derive(Debug)]
-enum LeftValue {
+struct LeftValue {
+    kind: LeftValueKind,
+    size: SizeInt,
+    addr: SizeInt,
+}
+
+#[derive(Debug)]
+enum LeftValueKind {
     Ident {
         name: String,
     },
@@ -506,12 +572,19 @@ enum LeftValue {
 
 impl fmt::Display for LeftValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.kind)
+    }
+}
+
+impl fmt::Display for LeftValueKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            LeftValue::Ident { name } => write!(f, "{}", name),
-            LeftValue::ArrayIndex { array, index } => write!(f, "{}[{}]", array, index),
-            LeftValue::StructField {
+            LeftValueKind::Ident { name, .. } => write!(f, "{}", name),
+            LeftValueKind::ArrayIndex { array, index, .. } => write!(f, "{}[{}]", array, index),
+            LeftValueKind::StructField {
                 struct_,
                 field_name,
+                ..
             } => write!(f, "{}.{}", struct_, field_name),
         }
     }
