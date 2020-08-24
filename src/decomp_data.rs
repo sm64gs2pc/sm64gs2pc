@@ -52,6 +52,9 @@ pub enum ToPatchError {
 
     #[snafu(display("Code accesses an array out of bounds"))]
     ArrayOutOfBounds,
+
+    #[snafu(display("Code assigns to a pointer"))]
+    PointerAssign,
 }
 
 impl DecompData {
@@ -220,7 +223,6 @@ impl DecompData {
             Type::Int { num_bytes, .. } => Ok(*num_bytes),
             Type::Pointer { .. } => Ok(8),
             Type::Float => Ok(4),
-            Type::Double => Ok(8),
             Type::Ignored => Err(ToPatchError::IgnoredType),
         }
     }
@@ -243,18 +245,18 @@ impl DecompData {
 
         let typ = match &decl.kind {
             DeclKind::Fn => return Err(ToPatchError::FnPatch),
-            DeclKind::Var { typ } => typ,
+            DeclKind::Var { typ } => typ.clone(),
         };
 
         let accum = LeftValue {
             kind: LeftValueKind::Ident {
                 name: decl.name.clone(),
             },
-            size: self.size_of_type(typ)?,
+            typ,
             addr: decl.addr,
         };
 
-        self.addr_and_type_to_lvalue(accum, addr, typ, decl.addr)
+        self.addr_and_type_to_lvalue(accum, addr, decl.addr)
     }
 
     fn addr_and_struct_to_lvalue(
@@ -278,37 +280,36 @@ impl DecompData {
                 struct_: Box::new(accum),
                 field_name: field.name.clone(),
             },
-            size: self.size_of_type(&field.typ)?,
+            typ: field.typ.clone(),
             addr: accum_addr,
         };
 
-        self.addr_and_type_to_lvalue(accum, addr, &field.typ, accum_addr)
+        self.addr_and_type_to_lvalue(accum, addr, accum_addr)
     }
 
     fn addr_and_type_to_lvalue(
         &self,
         accum: LeftValue,
         addr: SizeInt,
-        typ: &Type,
         accum_addr: SizeInt,
     ) -> Result<LeftValue, ToPatchError> {
-        match typ {
+        match accum.typ.clone() {
             Type::AnonStruct(struct_) => {
-                self.addr_and_struct_to_lvalue(accum, addr, struct_, accum_addr)
+                self.addr_and_struct_to_lvalue(accum, addr, &struct_, accum_addr)
             }
             Type::Struct { name } => {
-                let struct_ = self.structs.get(name).context(NoStruct { name })?;
+                let struct_ = self.structs.get(&name).context(NoStruct { name })?;
                 self.addr_and_struct_to_lvalue(accum, addr, struct_, accum_addr)
             }
-            Type::Int { .. } | Type::Pointer { .. } | Type::Float | Type::Double => Ok(accum),
+            Type::Int { .. } | Type::Float => Ok(accum),
             Type::Array {
                 element_type,
                 num_elements,
             } => {
-                let element_type_size = self.size_of_type(element_type)?;
+                let element_type_size = self.size_of_type(&element_type)?;
                 let index = (addr - accum_addr) / element_type_size;
 
-                if index >= *num_elements {
+                if index >= num_elements {
                     return Err(ToPatchError::ArrayOutOfBounds);
                 }
 
@@ -319,12 +320,13 @@ impl DecompData {
                         array: Box::new(accum),
                         index,
                     },
-                    size: element_type_size,
+                    typ: *element_type,
                     addr: accum_addr,
                 };
 
-                self.addr_and_type_to_lvalue(accum, addr, element_type, accum_addr)
+                self.addr_and_type_to_lvalue(accum, addr, accum_addr)
             }
+            Type::Pointer { .. } => Err(ToPatchError::PointerAssign),
             Type::Ignored => unimplemented!("ignored type"),
         }
     }
@@ -419,7 +421,7 @@ impl DecompData {
     ) -> Result<String, ToPatchError> {
         let lvalue = self.addr_to_lvalue(addr)?;
 
-        let shift = lvalue_get_shift(&lvalue, write_size, addr);
+        let shift = self.lvalue_get_shift(&lvalue, write_size, addr)?;
 
         let (shift, next_write, write_size, value) = match shift {
             Some(shift) => (shift, None, write_size, value),
@@ -455,7 +457,7 @@ impl DecompData {
     ) -> Result<String, ToPatchError> {
         let lvalue = self.addr_to_lvalue(addr)?;
 
-        let shift = lvalue_get_shift(&lvalue, read_size, addr);
+        let shift = self.lvalue_get_shift(&lvalue, read_size, addr)?;
 
         let (shift, next_read, read_size, value) = match shift {
             Some(shift) => (shift, None, read_size, value),
@@ -486,18 +488,20 @@ impl DecompData {
             next_read,
         ))
     }
-}
 
-fn lvalue_get_shift(
-    lvalue: &LeftValue,
-    value_size: gameshark::ValueSize,
-    addr: SizeInt,
-) -> Option<SizeInt> {
-    lvalue
-        .size
-        .checked_sub(value_size.num_bytes())
-        .and_then(|size_diff| size_diff.checked_sub(addr - lvalue.addr))
-        .map(|diff_diff| diff_diff * 8)
+    fn lvalue_get_shift(
+        &self,
+        lvalue: &LeftValue,
+        value_size: gameshark::ValueSize,
+        addr: SizeInt,
+    ) -> Result<Option<SizeInt>, ToPatchError> {
+        let lvalue_size = self.size_of_type(&lvalue.typ)?;
+
+        Ok(lvalue_size
+            .checked_sub(value_size.num_bytes())
+            .and_then(|size_diff| size_diff.checked_sub(addr - lvalue.addr))
+            .map(|diff_diff| diff_diff * 8))
+    }
 }
 
 #[cfg(test)]
@@ -520,6 +524,17 @@ mod tests {
         );
     }
 
+    fn add_float(decomp_data: &mut DecompData, addr: SizeInt, name: &str) {
+        decomp_data.decls.insert(
+            addr,
+            Decl {
+                addr,
+                kind: DeclKind::Var { typ: Type::Float },
+                name: name.to_owned(),
+            },
+        );
+    }
+
     fn decomp_data() -> DecompData {
         let mut data = DecompData::default();
         add_int(&mut data, 0x8000, 1, "A");
@@ -530,6 +545,7 @@ mod tests {
         add_int(&mut data, 0x8008, 4, "F");
         add_int(&mut data, 0x800c, 2, "G");
         add_int(&mut data, 0x800e, 2, "H");
+        add_float(&mut data, 0x8010, "f0");
         data
     }
 
@@ -578,6 +594,13 @@ mod tests {
             data.format_write(gameshark::ValueSize::Bits16, 0xabcd, 0x8007)
                 .unwrap(),
             "E = (E & 0xffffffffffffff00) | 0xab; F = (F & 0xffffffff00ffffff) | 0xcd000000;"
+        );
+
+        // Floats
+        assert_eq!(
+            data.format_write(gameshark::ValueSize::Bits16, 0xabcd, 0x8010)
+                .unwrap(),
+            "*(uint32_t *) &f0 = (*(uint32_t *) &f0 & 0xffffffff0000ffff) | 0xabcd0000;"
         );
     }
 

@@ -3,7 +3,7 @@ use serde::Serialize;
 
 pub type SizeInt = u32;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Type {
     AnonStruct(Struct),
     Struct {
@@ -21,7 +21,6 @@ pub enum Type {
         inner_type: Box<Type>,
     },
     Float,
-    Double,
     Ignored,
 }
 
@@ -31,7 +30,8 @@ impl Type {
             clang::TypeKind::Void
             | clang::TypeKind::FunctionPrototype
             | clang::TypeKind::Long
-            | clang::TypeKind::IncompleteArray => Type::Ignored,
+            | clang::TypeKind::IncompleteArray
+            | clang::TypeKind::Double => Type::Ignored,
             clang::TypeKind::SChar | clang::TypeKind::CharS => Type::Int {
                 signed: true,
                 num_bytes: 1,
@@ -65,7 +65,6 @@ impl Type {
                 num_bytes: 8,
             },
             clang::TypeKind::Float => Type::Float,
-            clang::TypeKind::Double => Type::Double,
             clang::TypeKind::Pointer => Type::Pointer {
                 inner_type: Box::new(Type::from_clang(typ.get_pointee_type().unwrap())),
             },
@@ -93,14 +92,14 @@ impl Type {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StructField {
     pub offset: SizeInt,
     pub name: String,
     pub typ: Type,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Struct {
     pub fields: Vec<StructField>,
 }

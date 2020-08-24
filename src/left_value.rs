@@ -1,11 +1,12 @@
 use crate::typ::SizeInt;
+use crate::typ::Type;
 
 use std::fmt;
 
 #[derive(Debug)]
 pub struct LeftValue {
     pub kind: LeftValueKind,
-    pub size: SizeInt,
+    pub typ: Type,
     pub addr: SizeInt,
 }
 
@@ -26,7 +27,11 @@ pub enum LeftValueKind {
 
 impl fmt::Display for LeftValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.kind)
+        if self.typ == Type::Float {
+            write!(f, "*(uint32_t *) &{}", self.kind)
+        } else {
+            write!(f, "{}", self.kind)
+        }
     }
 }
 
