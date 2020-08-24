@@ -10,12 +10,12 @@ index c2df451..adfc802 100644
  #include <prevent_bss_reordering.h>
  #ifdef BETTERCAMERA
  #include "bettercamera.h"
-@@ -596,6 +597,7 @@ void game_loop_one_iteration(void) {
+@@ -596,3 +597,4 @@ void game_loop_one_iteration(void) {
      read_controller_inputs();
      levelCommandAddr = level_script_execute(levelCommandAddr);
      display_and_vsync();
 +    run_gameshark_cheats();
- 
+
      // when debug info is enabled, print the "BUF %d" information.
      if (gShowDebugText) {
 diff --git a/src/game/gameshark.c b/src/game/gameshark.c
@@ -23,7 +23,7 @@ new file mode 100644
 index 0000000..0bd5aba
 --- /dev/null
 +++ b/src/game/gameshark.c
-@@ -0,0 +1,266 @@
+@@ -0,0 +1,264 @@
 +#ifndef GAMESHARK_H
 +#define GAMESHARK_H
 +
@@ -231,8 +231,6 @@ index 0000000..0bd5aba
 +#include <./include/command_macros_base.h>
 +#include <./include/behavior_data.h>
 +#include <./include/audio_defines.h>
-+#include <./include/stb/stb_image_write.h>
-+#include <./include/stb/stb_image.h>
 +#include <./include/libc/string.h>
 +#include <./include/libc/stdlib.h>
 +#include <./include/libc/stdio.h>
