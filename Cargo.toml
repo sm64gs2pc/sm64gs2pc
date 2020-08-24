@@ -8,6 +8,7 @@ edition = "2018"
 walkdir = "2.3.1"
 snafu = "0.6.8"
 patch = "0.5.0"
+structopt = "0.3.16"
 
 [dependencies.clang]
 version = "1.0.0"

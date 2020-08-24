@@ -207,6 +207,28 @@ impl FromStr for Codes {
     }
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum ValueSize {
+    Bits8,
+    Bits16,
+}
+
+impl ValueSize {
+    pub fn num_bytes(self) -> SizeInt {
+        match self {
+            ValueSize::Bits8 => 1,
+            ValueSize::Bits16 => 2,
+        }
+    }
+
+    pub fn mask(self) -> u64 {
+        match self {
+            ValueSize::Bits8 => 0xff,
+            ValueSize::Bits16 => 0xffff,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
