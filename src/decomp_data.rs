@@ -418,26 +418,14 @@ impl DecompData {
         addr: SizeInt,
     ) -> Result<String, ToPatchError> {
         let lvalue = self.addr_to_lvalue(addr)?;
-        println!(
-            "lvalue: {:?}, write_size: {:?}, addr: {}",
-            lvalue, write_size, addr
-        );
 
-        let (size_diff, next_write, write_size, value) = match lvalue
-            .size
-            .checked_sub(write_size.num_bytes())
-        {
-            Some(size_diff) => match size_diff.checked_sub(addr - lvalue.addr) {
-                Some(_) => (size_diff, None, write_size, value),
-                None => (
-                    lvalue.size - 1,
-                    Some(self.format_write(gameshark::ValueSize::Bits8, value & 0xff, addr + 1)?),
-                    gameshark::ValueSize::Bits8,
-                    value >> 8,
-                ),
-            },
+        let size_diff = lvalue.size.checked_sub(write_size.num_bytes());
+        let diff_diff = size_diff.and_then(|size_diff| size_diff.checked_sub(addr - lvalue.addr));
+
+        let (diff_diff, next_write, write_size, value) = match diff_diff {
+            Some(diff_diff) => (diff_diff, None, write_size, value),
             None => (
-                lvalue.size - 1,
+                0,
                 Some(self.format_write(gameshark::ValueSize::Bits8, value & 0xff, addr + 1)?),
                 gameshark::ValueSize::Bits8,
                 value >> 8,
@@ -449,10 +437,7 @@ impl DecompData {
             None => String::new(),
         };
 
-        let addr_diff = addr - lvalue.addr;
-        println!("{}", next_write);
-        println!("size_diff: {}, addr_diff: {}", size_diff, addr_diff);
-        let shift = (size_diff - addr_diff) * 8;
+        let shift = diff_diff * 8;
 
         Ok(format!(
             "{} = ({} & {:#x}) | {:#x};{}",
@@ -561,7 +546,6 @@ mod tests {
                 .unwrap(),
             "D = (D & 0xffffffffffffff00) | 0xab; E = (E & 0xffffffff00ffffff) | 0xcd000000;"
         );
-        println!("-------------");
         assert_eq!(
             data.format_write(gameshark::ValueSize::Bits16, 0xabcd, 0x8007)
                 .unwrap(),
