@@ -9,6 +9,7 @@ walkdir = "2.3.1"
 snafu = "0.6.8"
 patch = "0.5.0"
 structopt = "0.3.16"
+rmp-serde = "0.14.4"
 
 [dependencies.clang]
 version = "1.0.0"
