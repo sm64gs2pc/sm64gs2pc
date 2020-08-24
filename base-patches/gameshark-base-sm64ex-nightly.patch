@@ -10,12 +10,12 @@ index c2df451..adfc802 100644
  #include <prevent_bss_reordering.h>
  #ifdef BETTERCAMERA
  #include "bettercamera.h"
-@@ -596,3 +597,4 @@ void game_loop_one_iteration(void) {
+@@ -596,6 +597,7 @@ void game_loop_one_iteration(void) {
      read_controller_inputs();
      levelCommandAddr = level_script_execute(levelCommandAddr);
      display_and_vsync();
 +    run_gameshark_cheats();
-
+ 
      // when debug info is enabled, print the "BUF %d" information.
      if (gShowDebugText) {
 diff --git a/src/game/gameshark.c b/src/game/gameshark.c
