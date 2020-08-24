@@ -419,11 +419,10 @@ impl DecompData {
     ) -> Result<String, ToPatchError> {
         let lvalue = self.addr_to_lvalue(addr)?;
 
-        let size_diff = lvalue.size.checked_sub(write_size.num_bytes());
-        let diff_diff = size_diff.and_then(|size_diff| size_diff.checked_sub(addr - lvalue.addr));
+        let shift = lvalue_get_shift(&lvalue, write_size, addr);
 
-        let (diff_diff, next_write, write_size, value) = match diff_diff {
-            Some(diff_diff) => (diff_diff, None, write_size, value),
+        let (shift, next_write, write_size, value) = match shift {
+            Some(shift) => (shift, None, write_size, value),
             None => (
                 0,
                 Some(self.format_write(gameshark::ValueSize::Bits8, value & 0xff, addr + 1)?),
@@ -436,8 +435,6 @@ impl DecompData {
             Some(s) => format!(" {}", s),
             None => String::new(),
         };
-
-        let shift = diff_diff * 8;
 
         Ok(format!(
             "{} = ({} & {:#x}) | {:#x};{}",
@@ -458,18 +455,49 @@ impl DecompData {
     ) -> Result<String, ToPatchError> {
         let lvalue = self.addr_to_lvalue(addr)?;
 
-        let size_diff = lvalue.size - read_size.num_bytes();
-        let addr_diff = addr - lvalue.addr;
-        let shift = (size_diff - addr_diff) * 8;
+        let shift = lvalue_get_shift(&lvalue, read_size, addr);
+
+        let (shift, next_read, read_size, value) = match shift {
+            Some(shift) => (shift, None, read_size, value),
+            None => (
+                0,
+                Some(self.format_check(
+                    gameshark::ValueSize::Bits8,
+                    value & 0xff,
+                    addr + 1,
+                    check_eq,
+                )?),
+                gameshark::ValueSize::Bits8,
+                value >> 8,
+            ),
+        };
+
+        let next_read = match next_read {
+            Some(s) => format!(" {}", s),
+            None => String::new(),
+        };
 
         Ok(format!(
-            "if (({} & {:#x}) {} {:#x})",
+            "if (({} & {:#x}) {} {:#x}){}",
             lvalue,
             read_size.mask() << shift,
             if check_eq { "==" } else { "!=" },
             value << shift,
+            next_read,
         ))
     }
+}
+
+fn lvalue_get_shift(
+    lvalue: &LeftValue,
+    value_size: gameshark::ValueSize,
+    addr: SizeInt,
+) -> Option<SizeInt> {
+    lvalue
+        .size
+        .checked_sub(value_size.num_bytes())
+        .and_then(|size_diff| size_diff.checked_sub(addr - lvalue.addr))
+        .map(|diff_diff| diff_diff * 8)
 }
 
 #[cfg(test)]
@@ -550,6 +578,54 @@ mod tests {
             data.format_write(gameshark::ValueSize::Bits16, 0xabcd, 0x8007)
                 .unwrap(),
             "E = (E & 0xffffffffffffff00) | 0xab; F = (F & 0xffffffff00ffffff) | 0xcd000000;"
+        );
+    }
+
+    #[test]
+    fn test_format_check() {
+        let data = decomp_data();
+
+        assert_eq!(
+            data.format_check(gameshark::ValueSize::Bits8, 0xaa, 0x8000, true)
+                .unwrap(),
+            "if ((A & 0xff) == 0xaa)"
+        );
+        assert_eq!(
+            data.format_check(gameshark::ValueSize::Bits8, 0xaa, 0x800c, true)
+                .unwrap(),
+            "if ((G & 0xff00) == 0xaa00)"
+        );
+        assert_eq!(
+            data.format_check(gameshark::ValueSize::Bits8, 0xaa, 0x8004, true)
+                .unwrap(),
+            "if ((E & 0xff000000) == 0xaa000000)"
+        );
+        assert_eq!(
+            data.format_check(gameshark::ValueSize::Bits8, 0xaa, 0x800d, true)
+                .unwrap(),
+            "if ((G & 0xff) == 0xaa)"
+        );
+        assert_eq!(
+            data.format_check(gameshark::ValueSize::Bits16, 0xabcd, 0x800e, true)
+                .unwrap(),
+            "if ((H & 0xffff) == 0xabcd)"
+        );
+
+        // Check spans multiple ints
+        assert_eq!(
+            data.format_check(gameshark::ValueSize::Bits16, 0xabcd, 0x8000, true)
+                .unwrap(),
+            "if ((A & 0xff) == 0xab) if ((B & 0xff) == 0xcd)"
+        );
+        assert_eq!(
+            data.format_check(gameshark::ValueSize::Bits16, 0xabcd, 0x8003, true)
+                .unwrap(),
+            "if ((D & 0xff) == 0xab) if ((E & 0xff000000) == 0xcd000000)"
+        );
+        assert_eq!(
+            data.format_check(gameshark::ValueSize::Bits16, 0xabcd, 0x8007, true)
+                .unwrap(),
+            "if ((E & 0xff) == 0xab) if ((F & 0xff000000) == 0xcd000000)"
         );
     }
 }
