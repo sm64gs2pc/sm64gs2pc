@@ -3,14 +3,14 @@ use crate::typ::Type;
 
 use std::fmt;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LeftValue {
     pub kind: LeftValueKind,
     pub typ: Type,
     pub addr: SizeInt,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum LeftValueKind {
     Ident {
         name: String,

@@ -50,8 +50,8 @@ pub enum ToPatchError {
     #[snafu(display("No struct field found for address"))]
     NoField,
 
-    #[snafu(display("Code accesses an array out of bounds"))]
-    ArrayOutOfBounds,
+    #[snafu(display("Code accesses an array out of bounds: {}", lvalue))]
+    ArrayOutOfBounds { lvalue: LeftValue },
 
     #[snafu(display("Code assigns to a pointer"))]
     PointerAssign,
@@ -322,7 +322,7 @@ impl DecompData {
                 let index = (addr - accum_addr) / element_type_size;
 
                 if index >= num_elements {
-                    return Err(ToPatchError::ArrayOutOfBounds);
+                    return Err(ToPatchError::ArrayOutOfBounds { lvalue: accum });
                 }
 
                 let accum_addr = accum_addr + index * element_type_size;
