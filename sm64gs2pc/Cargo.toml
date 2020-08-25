@@ -1,0 +1,16 @@
+[package]
+name = "sm64gs2pc"
+version = "0.1.0"
+authors = ["Benjamin Levy <blevy@protonmail.com>"]
+edition = "2018"
+
+[dependencies]
+sm64gs2pc-core = { path = "../sm64gs2pc-core" }
+structopt = "0.3.16"
+bincode = "1.3.1"
+lazy_static = "1.4.0"
+
+[build-dependencies]
+sm64gs2pc-core = { path = "../sm64gs2pc-core" }
+tempfile = "3.1.0"
+bincode = "1.3.1"

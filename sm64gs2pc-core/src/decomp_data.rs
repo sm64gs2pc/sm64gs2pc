@@ -17,7 +17,6 @@ use std::io::BufReader;
 use std::iter::once;
 use std::path::Path;
 use std::process::Command;
-use std::process::Stdio;
 
 use serde::Deserialize;
 use serde::Serialize;
@@ -71,21 +70,10 @@ impl DecompData {
                 .success());
         }
 
-        let cache_file_path = repo.join("sm64gs2pc.msgpack");
-
-        if cache_file_path.exists() {
-            return rmp_serde::decode::from_read(BufReader::new(
-                File::open(cache_file_path).unwrap(),
-            ))
-            .unwrap();
-        }
-
         std::fs::copy(base_rom, repo.join("baserom.us.z64")).unwrap();
 
         assert!(Command::new("make")
             .current_dir(repo)
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
             .status()
             .unwrap()
             .success());
@@ -212,9 +200,6 @@ impl DecompData {
                 decomp_data.structs.insert(decl.name, struct_);
             }
         }
-
-        rmp_serde::encode::write(&mut File::create(cache_file_path).unwrap(), &decomp_data)
-            .unwrap();
 
         decomp_data
     }

@@ -1,0 +1,18 @@
+[package]
+name = "sm64gs2pc-core"
+version = "0.1.0"
+authors = ["Benjamin Levy <blevy@protonmail.com>"]
+edition = "2018"
+
+[dependencies]
+walkdir = "2.3.1"
+snafu = "0.6.8"
+patch = "0.5.0"
+
+[dependencies.clang]
+version = "1.0.0"
+features = ["clang_10_0"]
+
+[dependencies.serde]
+version = "1.0.115"
+features = ["derive"]
