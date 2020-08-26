@@ -56,3 +56,10 @@ example is the player model, so color-changing hat codes unfortunately won't
 work. Any declarations with `const` or `static` have this problem. This might be
 possible to fix, but it's unclear how to get the memory addresses of these
 declarations from the decompilation repo.
+
+### Unknown code types
+
+Some GameShark code types have unknown functionality, and it's almost impossible
+to find any information on them. Even Nintendo 64 emulators don't support them.
+One example is the `A4` code type. Basically, if a code is unsupported in
+Mupen64Plus or Project64, sm64gs2pc definitely won't support it.
