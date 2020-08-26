@@ -24,10 +24,13 @@ ports of Super Mario 64, such as
 ## Usage
 
 ```
-sm64gs2pc --code <code> --name <name>
+sm64gs2pc --code <code> --name <name> > output.patch
 ```
 * `--code <code>` - Path to file with GameShark code to convert
 * `--name <name>` - Name of GameShark cheat
+
+The output patch file can be applied to a PC port fork, but a
+[base patch](base-patches) must be applied first.
 
 ## Limitations
 
