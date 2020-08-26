@@ -126,7 +126,7 @@ impl FromStr for Code {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // Split `TTXXXXXX YYYY` into `TTXXXXXX` and `YYYY`
-        let tokens = s.split(' ').collect::<Vec<&str>>();
+        let tokens = s.split_whitespace().collect::<Vec<&str>>();
         let (type_addr, value) = if let &[type_addr, value] = tokens.as_slice() {
             Ok((type_addr, value))
         } else {
@@ -200,6 +200,11 @@ impl FromStr for Codes {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let codes = s
             .lines()
+            // Ignore leading and trailing whitespace
+            .map(|line| line.trim())
+            // Ignore empty lines
+            .filter(|line| !line.is_empty())
+            // Parse line
             .map(|line| line.parse::<Code>())
             .collect::<Result<Vec<Code>, Self::Err>>()?;
 
@@ -241,14 +246,15 @@ mod tests {
                      8129CEC0 2400\n\
                      D033AFA1 0020\n\
                      8033B21E 0008\n\
+                     \n\
+                     D033AFA1  0020  \n\
+                     8133B262 0000 \n\
                      D033AFA1 0020\n\
-                     8133B262 0000\n\
-                     D033AFA1 0020\n\
-                     8133B218 0000\n\
-                     D033AFA1 0020\n\
-                     8033B248 0002\n\
-                     D033AFA1 0020\n\
-                     81361414 0005";
+                     8133B218   0000\n\
+                     D033AFA1 0020 \n\
+                     8033B248  0002\n\
+                     D033AFA1 0020 \n\
+                     81361414 0005 ";
         assert_eq!(
             codes.parse::<Codes>().unwrap(),
             Codes(vec![
