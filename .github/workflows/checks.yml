@@ -40,10 +40,20 @@ jobs:
         with:
           command: check
 
+      - name: Run cargo check --all-features
+        uses: actions-rs/cargo@v1
+        with:
+          command: check --all-features
+
       - name: Run cargo test
         uses: actions-rs/cargo@v1
         with:
           command: test
+
+      - name: Run cargo test --all-features
+        uses: actions-rs/cargo@v1
+        with:
+          command: test --all-features
 
       - name: Run cargo fmt
         uses: actions-rs/cargo@v1
@@ -56,3 +66,9 @@ jobs:
         with:
           command: clippy
           args: -- -D warnings
+
+      - name: Run cargo clippy --all-features
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --all-features -- -D warnings
