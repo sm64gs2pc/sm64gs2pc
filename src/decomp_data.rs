@@ -362,9 +362,20 @@ impl DecompData {
     }
 
     /// Convert GameShark codes to a patch in the unified diff format
-    pub fn gs_codes_to_patch(&self, codes: gameshark::Codes) -> Result<String, ToPatchError> {
-        // Added C source code lines
-        let added_lines = codes
+    ///
+    /// ## Parameters
+    ///   * `name` - Name of cheat to be included in comment in patch
+    ///   * `codes` - GameShark codes to convert
+    pub fn gs_codes_to_patch(
+        &self,
+        name: &str,
+        codes: gameshark::Codes,
+    ) -> Result<String, ToPatchError> {
+        // Comment with name of cheat
+        let name_comment = format!("    /* {} */", name);
+
+        // Added C source code cheat lines
+        let cheat_lines = codes
             .0
             .into_iter()
             .map(|code| {
@@ -377,15 +388,17 @@ impl DecompData {
             // `&str` which needs an owned value to reference
             .collect::<Result<Vec<String>, ToPatchError>>()?;
 
-        // Added C source code `patch::Line`s
-        let added_lines = added_lines.iter().map(|line| patch::Line::Add(line));
+        // Added C source code cheat `patch::Line`s
+        let cheat_lines = cheat_lines.iter().map(|line| patch::Line::Add(line));
 
         // All lines of patch
         let lines = once(patch::Line::Context("void run_gameshark_cheats(void) {"))
             // Add blank line between cheats
             .chain(once(patch::Line::Add("")))
+            // Add comment
+            .chain(once(patch::Line::Add(&name_comment)))
             // Add cheat
-            .chain(added_lines)
+            .chain(cheat_lines)
             // Detect blank line between cheats
             .chain(once(patch::Line::Context("")))
             .collect::<Vec<patch::Line>>();

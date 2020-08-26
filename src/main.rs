@@ -6,6 +6,10 @@ use structopt::StructOpt;
 
 #[derive(StructOpt)]
 struct Opts {
+    /// Name of GameShark cheat
+    #[structopt(long)]
+    name: String,
+
     /// Path to file with GameShark code to convert
     #[structopt(long)]
     code: PathBuf,
@@ -20,7 +24,7 @@ fn main() {
         .unwrap();
 
     let patch = sm64gs2pc::DECOMP_DATA_STATIC
-        .gs_codes_to_patch(codes)
+        .gs_codes_to_patch(&opts.name, codes)
         .unwrap();
 
     println!("{}", patch);
