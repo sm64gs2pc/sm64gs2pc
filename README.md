@@ -1,3 +1,5 @@
+[![crates.io](https://img.shields.io/crates/v/sm64gs2pc)](https://crates.io/crates/sm64gs2pc)
+[![docs.rs](https://docs.rs/sm64gs2pc/badge.svg)](https://docs.rs/sm64gs2pc)
 [![Checks](https://github.com/sm64gs2pc/sm64gs2pc/workflows/Checks/badge.svg)](https://github.com/sm64gs2pc/sm64gs2pc/actions?query=workflow%3AChecks)
 [![cargo-audit](https://github.com/sm64gs2pc/sm64gs2pc/workflows/cargo-audit/badge.svg)](https://github.com/sm64gs2pc/sm64gs2pc/actions?query=workflow%3Acargo-audit)
 [![Dependabot Status](https://api.dependabot.com/badges/status?host=github&repo=sm64gs2pc/sm64gs2pc)](https://dependabot.com)
@@ -18,7 +20,7 @@ ports of Super Mario 64, such as
 ## Installing
 
 1. Install [Rust](https://rustup.rs/)
-2. Run `cargo install --git https://github.com/sm64gs2pc/sm64gs2pc`
+2. Run `cargo install sm64gs2pc`
      * On Unix, this installs to `~/.cargo/bin` by default
 
 ## Usage
