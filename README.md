@@ -6,7 +6,7 @@
 
 # sm64gs2pc
 
-![logo](https://raw.githubusercontent.com/sm64gs2pc/assets/master/logo.png)
+![logo](logo.png)
 
 Convert Super Mario 64 GameShark codes to SM64 PC port patches
 
