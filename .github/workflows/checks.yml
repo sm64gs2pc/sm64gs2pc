@@ -43,7 +43,8 @@ jobs:
       - name: Run cargo check --all-features
         uses: actions-rs/cargo@v1
         with:
-          command: check --all-features
+          command: check
+          args: --all-features
 
       - name: Run cargo test
         uses: actions-rs/cargo@v1
@@ -53,7 +54,8 @@ jobs:
       - name: Run cargo test --all-features
         uses: actions-rs/cargo@v1
         with:
-          command: test --all-features
+          command: test
+          args: --all-features
 
       - name: Run cargo fmt
         uses: actions-rs/cargo@v1
