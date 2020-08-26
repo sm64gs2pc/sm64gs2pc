@@ -332,8 +332,8 @@ impl DecompData {
         }
     }
 
-    /// Convert a GameShark code to a line of C source code
-    fn gs_code_to_c(&self, code: gameshark::CodeLine) -> Result<String, ToPatchError> {
+    /// Convert a GameShark code line to a line of C source code
+    fn gs_line_to_c(&self, code: gameshark::CodeLine) -> Result<String, ToPatchError> {
         let addr = code.addr() + 0x80000000;
 
         let c_source = match code {
@@ -378,9 +378,9 @@ impl DecompData {
         let cheat_lines = code
             .0
             .into_iter()
-            .map(|code| {
+            .map(|code_line| {
                 // Convert to C and indent
-                let line = self.gs_code_to_c(code)?;
+                let line = self.gs_line_to_c(code_line)?;
                 let line = format!("    {}", line);
                 Ok(line)
             })
