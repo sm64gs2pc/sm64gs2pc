@@ -6,7 +6,7 @@ name: Checks
 
 jobs:
   checks:
-    name: Check
+    name: Checks
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -25,6 +25,8 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt install libclang-10-dev build-essential
+          wget https://github.com/n64decomp/qemu-irix/releases/download/v2.11-deb/qemu-irix-2.11.0-2169-g32ab296eef_amd64.deb -O qemu-irix.deb
+          sudo dpkg --install qemu-irix.deb
 
       - name: Install stable Rust toolchain
         uses: actions-rs/toolchain@v1
