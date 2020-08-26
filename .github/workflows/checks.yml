@@ -19,8 +19,8 @@ jobs:
           token: ${{ secrets.ROMS_CLONE_TOKEN }}
           path: roms
 
-      - name: Move base ROM to right place
-        run: mv roms/baserom.us.z64 sm64gs2pc/
+      - name: Move base ROM to repo root
+        run: mv roms/baserom.us.z64 .
 
       - name: Install dependencies
         run: |
