@@ -4,16 +4,16 @@
 //!
 //! ```
 //! use sm64gs2pc::gameshark::Code;
-//! use sm64gs2pc::gameshark::Codes;
+//! use sm64gs2pc::gameshark::CodeLine;
 //!
 //! assert_eq!(
-//!     "8129CE9C 2400\n8129CEC0 2400".parse::<Codes>().unwrap(),
-//!     Codes(vec![
-//!         Code::Write16 {
+//!     "8129CE9C 2400\n8129CEC0 2400".parse::<Code>().unwrap(),
+//!     Code(vec![
+//!         CodeLine::Write16 {
 //!             addr: 0x0029CE9C,
 //!             value: 0x2400,
 //!         },
-//!         Code::Write16 {
+//!         CodeLine::Write16 {
 //!             addr: 0x0029CEC0,
 //!             value: 0x2400,
 //!         },
@@ -42,9 +42,9 @@ pub enum ParseError {
     CodeTypeError,
 }
 
-/// A parsed Nintendo 64 GameShark code
+/// A parsed line of a Nintendo 64 GameShark code
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Code {
+pub enum CodeLine {
     /// 8-bit Write
     ///
     /// ```text
@@ -108,20 +108,20 @@ pub enum Code {
     IfNotEq16 { addr: SizeInt, value: u16 },
 }
 
-impl Code {
+impl CodeLine {
     pub fn addr(self) -> SizeInt {
         match self {
-            Code::Write8 { addr, .. } => addr,
-            Code::Write16 { addr, .. } => addr,
-            Code::IfEq8 { addr, .. } => addr,
-            Code::IfEq16 { addr, .. } => addr,
-            Code::IfNotEq8 { addr, .. } => addr,
-            Code::IfNotEq16 { addr, .. } => addr,
+            CodeLine::Write8 { addr, .. } => addr,
+            CodeLine::Write16 { addr, .. } => addr,
+            CodeLine::IfEq8 { addr, .. } => addr,
+            CodeLine::IfEq16 { addr, .. } => addr,
+            CodeLine::IfNotEq8 { addr, .. } => addr,
+            CodeLine::IfNotEq16 { addr, .. } => addr,
         }
     }
 }
 
-impl FromStr for Code {
+impl FromStr for CodeLine {
     type Err = ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -148,27 +148,27 @@ impl FromStr for Code {
         let addr = type_addr & 0x00FFFFFF;
 
         match code_type {
-            0x80 => Ok(Code::Write8 {
+            0x80 => Ok(CodeLine::Write8 {
                 addr,
                 value: value8,
             }),
-            0x81 => Ok(Code::Write16 {
+            0x81 => Ok(CodeLine::Write16 {
                 addr,
                 value: value16,
             }),
-            0xD0 => Ok(Code::IfEq8 {
+            0xD0 => Ok(CodeLine::IfEq8 {
                 addr,
                 value: value8,
             }),
-            0xD1 => Ok(Code::IfEq16 {
+            0xD1 => Ok(CodeLine::IfEq16 {
                 addr,
                 value: value16,
             }),
-            0xD2 => Ok(Code::IfNotEq8 {
+            0xD2 => Ok(CodeLine::IfNotEq8 {
                 addr,
                 value: value8,
             }),
-            0xD3 => Ok(Code::IfNotEq16 {
+            0xD3 => Ok(CodeLine::IfNotEq16 {
                 addr,
                 value: value16,
             }),
@@ -177,38 +177,38 @@ impl FromStr for Code {
     }
 }
 
-impl fmt::Display for Code {
+impl fmt::Display for CodeLine {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Code::Write8 { addr, value } => write!(f, "80{:06X} {:04X}", addr, value),
-            Code::Write16 { addr, value } => write!(f, "81{:06X} {:04X}", addr, value),
-            Code::IfEq8 { addr, value } => write!(f, "D0{:06X} {:04X}", addr, value),
-            Code::IfEq16 { addr, value } => write!(f, "D1{:06X} {:04X}", addr, value),
-            Code::IfNotEq8 { addr, value } => write!(f, "D2{:06X} {:04X}", addr, value),
-            Code::IfNotEq16 { addr, value } => write!(f, "D3{:06X} {:04X}", addr, value),
+            CodeLine::Write8 { addr, value } => write!(f, "80{:06X} {:04X}", addr, value),
+            CodeLine::Write16 { addr, value } => write!(f, "81{:06X} {:04X}", addr, value),
+            CodeLine::IfEq8 { addr, value } => write!(f, "D0{:06X} {:04X}", addr, value),
+            CodeLine::IfEq16 { addr, value } => write!(f, "D1{:06X} {:04X}", addr, value),
+            CodeLine::IfNotEq8 { addr, value } => write!(f, "D2{:06X} {:04X}", addr, value),
+            CodeLine::IfNotEq16 { addr, value } => write!(f, "D3{:06X} {:04X}", addr, value),
         }
     }
 }
 
-/// A list of parsed Nintendo 64 GameShark codes
+/// A parsed Nintendo 64 GameShark code
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Codes(pub Vec<Code>);
+pub struct Code(pub Vec<CodeLine>);
 
-impl FromStr for Codes {
+impl FromStr for Code {
     type Err = ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let codes = s
+        let code = s
             .lines()
             // Ignore leading and trailing whitespace
             .map(|line| line.trim())
             // Ignore empty lines
             .filter(|line| !line.is_empty())
             // Parse line
-            .map(|line| line.parse::<Code>())
-            .collect::<Result<Vec<Code>, Self::Err>>()?;
+            .map(|line| line.parse::<CodeLine>())
+            .collect::<Result<Vec<CodeLine>, Self::Err>>()?;
 
-        Ok(Codes(codes))
+        Ok(Code(code))
     }
 }
 
@@ -239,70 +239,70 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_parse_codes() {
+    fn test_parse_code() {
         // Code from:
         // https://sites.google.com/site/sm64gameshark/codes/level-reset-star-select
-        let codes = "8129CE9C 2400\n\
-                     8129CEC0 2400\n\
-                     D033AFA1 0020\n\
-                     8033B21E 0008\n\
-                     \n\
-                     D033AFA1  0020  \n\
-                     8133B262 0000 \n\
-                     D033AFA1 0020\n\
-                     8133B218   0000\n\
-                     D033AFA1 0020 \n\
-                     8033B248  0002\n\
-                     D033AFA1 0020 \n\
-                     81361414 0005 ";
+        let code = "8129CE9C 2400\n\
+                    8129CEC0 2400\n\
+                    D033AFA1 0020\n\
+                    8033B21E 0008\n\
+                    \n\
+                    D033AFA1  0020  \n\
+                    8133B262 0000 \n \
+                    D033AFA1 0020\n \
+                    8133B218   0000\n\
+                    D033AFA1 0020 \n\
+                    8033B248  0002\n\
+                    D033AFA1 0020 \n\
+                    81361414 0005 ";
         assert_eq!(
-            codes.parse::<Codes>().unwrap(),
-            Codes(vec![
-                Code::Write16 {
+            code.parse::<Code>().unwrap(),
+            Code(vec![
+                CodeLine::Write16 {
                     addr: 0x0029CE9C,
                     value: 0x2400,
                 },
-                Code::Write16 {
+                CodeLine::Write16 {
                     addr: 0x0029CEC0,
                     value: 0x2400,
                 },
-                Code::IfEq8 {
+                CodeLine::IfEq8 {
                     addr: 0x0033AFA1,
                     value: 0x20,
                 },
-                Code::Write8 {
+                CodeLine::Write8 {
                     addr: 0x0033B21E,
                     value: 0x08,
                 },
-                Code::IfEq8 {
+                CodeLine::IfEq8 {
                     addr: 0x0033AFA1,
                     value: 0x20,
                 },
-                Code::Write16 {
+                CodeLine::Write16 {
                     addr: 0x0033B262,
                     value: 0x00,
                 },
-                Code::IfEq8 {
+                CodeLine::IfEq8 {
                     addr: 0x0033AFA1,
                     value: 0x20,
                 },
-                Code::Write16 {
+                CodeLine::Write16 {
                     addr: 0x0033B218,
                     value: 0x00,
                 },
-                Code::IfEq8 {
+                CodeLine::IfEq8 {
                     addr: 0x0033AFA1,
                     value: 0x20,
                 },
-                Code::Write8 {
+                CodeLine::Write8 {
                     addr: 0x0033B248,
                     value: 0x02,
                 },
-                Code::IfEq8 {
+                CodeLine::IfEq8 {
                     addr: 0x0033AFA1,
                     value: 0x20,
                 },
-                Code::Write16 {
+                CodeLine::Write16 {
                     addr: 0x00361414,
                     value: 0x05,
                 }

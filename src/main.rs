@@ -21,11 +21,11 @@ struct Opts {
 fn try_main() -> Result<(), Box<dyn std::error::Error>> {
     let opts = Opts::from_args();
 
-    // Parse GameShark codes
-    let codes = std::fs::read_to_string(opts.code)?.parse::<gameshark::Codes>()?;
+    // Parse GameShark code
+    let code = std::fs::read_to_string(opts.code)?.parse::<gameshark::Code>()?;
 
-    // Convert codes to patch
-    let patch = sm64gs2pc::DECOMP_DATA_STATIC.gs_codes_to_patch(&opts.name, codes)?;
+    // Convert code to patch
+    let patch = sm64gs2pc::DECOMP_DATA_STATIC.gs_code_to_patch(&opts.name, code)?;
 
     // Print patch
     std::io::stdout().write_all(patch.as_bytes())?;

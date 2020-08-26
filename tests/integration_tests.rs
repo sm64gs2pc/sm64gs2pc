@@ -1,7 +1,7 @@
-fn gs_to_patch(name: &str, codes: &str) -> String {
-    let codes = codes.parse::<sm64gs2pc::gameshark::Codes>().unwrap();
+fn gs_to_patch(name: &str, code: &str) -> String {
+    let code = code.parse::<sm64gs2pc::gameshark::Code>().unwrap();
     let patch = sm64gs2pc::DECOMP_DATA_STATIC
-        .gs_codes_to_patch(name, codes)
+        .gs_code_to_patch(name, code)
         .unwrap();
     println!("{}", patch);
     patch

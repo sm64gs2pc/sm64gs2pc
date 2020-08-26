@@ -333,26 +333,26 @@ impl DecompData {
     }
 
     /// Convert a GameShark code to a line of C source code
-    fn gs_code_to_c(&self, code: gameshark::Code) -> Result<String, ToPatchError> {
+    fn gs_code_to_c(&self, code: gameshark::CodeLine) -> Result<String, ToPatchError> {
         let addr = code.addr() + 0x80000000;
 
         let c_source = match code {
-            gameshark::Code::Write8 { value, .. } => {
+            gameshark::CodeLine::Write8 { value, .. } => {
                 self.format_write(gameshark::ValueSize::Bits8, value as u64, addr)
             }
-            gameshark::Code::Write16 { value, .. } => {
+            gameshark::CodeLine::Write16 { value, .. } => {
                 self.format_write(gameshark::ValueSize::Bits16, value as u64, addr)
             }
-            gameshark::Code::IfEq8 { value, .. } => {
+            gameshark::CodeLine::IfEq8 { value, .. } => {
                 self.format_check(gameshark::ValueSize::Bits8, value as u64, addr, true)
             }
-            gameshark::Code::IfEq16 { value, .. } => {
+            gameshark::CodeLine::IfEq16 { value, .. } => {
                 self.format_check(gameshark::ValueSize::Bits16, value as u64, addr, true)
             }
-            gameshark::Code::IfNotEq8 { value, .. } => {
+            gameshark::CodeLine::IfNotEq8 { value, .. } => {
                 self.format_check(gameshark::ValueSize::Bits8, value as u64, addr, false)
             }
-            gameshark::Code::IfNotEq16 { value, .. } => {
+            gameshark::CodeLine::IfNotEq16 { value, .. } => {
                 self.format_check(gameshark::ValueSize::Bits16, value as u64, addr, false)
             }
         }?;
@@ -361,21 +361,21 @@ impl DecompData {
         Ok(c_source)
     }
 
-    /// Convert GameShark codes to a patch in the unified diff format
+    /// Convert GameShark code to a patch in the unified diff format
     ///
     /// ## Parameters
     ///   * `name` - Name of cheat to be included in comment in patch
-    ///   * `codes` - GameShark codes to convert
-    pub fn gs_codes_to_patch(
+    ///   * `code` - GameShark code to convert
+    pub fn gs_code_to_patch(
         &self,
         name: &str,
-        codes: gameshark::Codes,
+        code: gameshark::Code,
     ) -> Result<String, ToPatchError> {
         // Comment with name of cheat
         let name_comment = format!("    /* {} */", name);
 
         // Added C source code cheat lines
-        let cheat_lines = codes
+        let cheat_lines = code
             .0
             .into_iter()
             .map(|code| {
