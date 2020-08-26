@@ -25,6 +25,7 @@ pub enum Type {
 }
 
 impl Type {
+    #[cfg(feature = "loader")]
     pub fn from_clang<'tu>(typ: clang::Type<'tu>) -> Type {
         match typ.get_kind() {
             clang::TypeKind::Void
@@ -105,6 +106,7 @@ pub struct Struct {
 }
 
 impl Struct {
+    #[cfg(feature = "loader")]
     pub fn from_clang<'tu>(typ: clang::Type<'tu>) -> Self {
         let fields = typ
             .get_fields()

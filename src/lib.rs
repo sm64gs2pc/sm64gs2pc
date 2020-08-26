@@ -1,4 +1,10 @@
-pub use sm64gs2pc_core::*;
+mod decl;
+mod decomp_data;
+pub mod gameshark;
+mod left_value;
+mod typ;
+
+pub use decomp_data::DecompData;
 
 use lazy_static::lazy_static;
 

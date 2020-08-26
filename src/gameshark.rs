@@ -3,8 +3,8 @@
 //! Based on this reference: <https://macrox.gshi.org/The%20Hacking%20Text.htm>
 //!
 //! ```
-//! use sm64gs2pc_core::gameshark::Code;
-//! use sm64gs2pc_core::gameshark::Codes;
+//! use sm64gs2pc::gameshark::Code;
+//! use sm64gs2pc::gameshark::Codes;
 //!
 //! assert_eq!(
 //!     "8129CE9C 2400\n8129CEC0 2400".parse::<Codes>().unwrap(),

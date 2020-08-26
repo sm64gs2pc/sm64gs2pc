@@ -10,19 +10,14 @@ use crate::typ::Type;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
-use std::ffi::OsStr;
-use std::fs::File;
-use std::io::BufRead;
-use std::io::BufReader;
 use std::iter::once;
+#[cfg(feature = "loader")]
 use std::path::Path;
-use std::process::Command;
 
 use serde::Deserialize;
 use serde::Serialize;
 use snafu::OptionExt;
 use snafu::Snafu;
-use walkdir::WalkDir;
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct DecompData {
@@ -57,7 +52,16 @@ pub enum ToPatchError {
 }
 
 impl DecompData {
+    #[cfg(feature = "loader")]
     pub fn load(base_rom: &Path, repo: &Path) -> Self {
+        use std::ffi::OsStr;
+        use std::fs::File;
+        use std::io::BufRead;
+        use std::io::BufReader;
+        use std::process::Command;
+
+        use walkdir::WalkDir;
+
         if !repo.exists() {
             assert!(Command::new("git")
                 .arg("clone")
