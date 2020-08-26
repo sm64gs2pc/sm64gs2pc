@@ -2,17 +2,31 @@
 
 on: [push, pull_request]
 
-name: tests
+name: Checks
 
 jobs:
-  check:
+  checks:
     name: Check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
 
-      - name: Install stable toolchain
+      - name: Get base ROM
+        uses: actions/checkout@v2
+        with:
+          repository: sm64gs2pc/roms
+          token: ${{ secrets.ROMS_CLONE_TOKEN }}
+          path: roms
+
+      - name: Move base ROM to right place
+        run: mv roms/baserom.us.z64 sm64gs2pc/
+
+      - name: Install dependencies
+        run: |
+          sudo apt install libclang-10-dev build-essential
+
+      - name: Install stable Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -24,39 +38,10 @@ jobs:
         with:
           command: check
 
-  test:
-    name: Test Suite
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@v2
-
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-
       - name: Run cargo test
         uses: actions-rs/cargo@v1
         with:
           command: test
-
-  lints:
-    name: Lints
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@v2
-
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-          components: rustfmt, clippy
 
       - name: Run cargo fmt
         uses: actions-rs/cargo@v1
