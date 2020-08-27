@@ -7,6 +7,8 @@ description = "Convert Super Mario 64 GameShark codes to SM64 PC port patches"
 readme = "README.md"
 license = "MIT"
 repository = "https://github.com/sm64gs2pc/sm64gs2pc"
+categories = ["games"]
+keywords = ["super-mario-64", "decompilation", "nintendo-64", "gameshark", "port"]
 
 [dependencies]
 snafu = "0.6.8"
