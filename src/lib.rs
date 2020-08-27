@@ -1,3 +1,4 @@
+#![doc(html_logo_url = "https://raw.githubusercontent.com/sm64gs2pc/sm64gs2pc/master/logo.png")]
 #![warn(missing_docs)]
 
 //! Tools for converting Super Mario 64 GameShark codes to SM64 PC port patches
