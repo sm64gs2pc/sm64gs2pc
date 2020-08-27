@@ -3,28 +3,53 @@ use serde::Serialize;
 
 pub type SizeInt = u32;
 
+/// A C type
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Type {
+    /// An anonymous (unnamed) struct, like `struct { int x }`
     AnonStruct(Struct),
+
+    /// An named struct, like `struct foo`
     Struct {
+        /// Name of the struct (`foo`)
         name: String,
     },
+
+    /// An array, like `int foo[10]`
     Array {
+        /// Type of each element (`int`)
         element_type: Box<Type>,
+        /// Amount of elements in array (`10`)
         num_elements: SizeInt,
     },
+
+    /// An integer, like `uint32_t`
     Int {
+        /// Whether the integer is signed
         signed: bool,
+        /// Size of integer in bytes
         num_bytes: SizeInt,
     },
+
+    /// A pointer, like `Foo *`
     Pointer {
+        /// The inner type (`Foo`)
         inner_type: Box<Type>,
     },
+
+    /// The primitive `float` type
     Float,
+
+    /// Type is ignored by this tool
     Ignored,
 }
 
 impl Type {
+    /// Convert from a `clang::Type` to a `Type`
+    ///
+    /// ## Panics
+    ///   * The `clang::Type` is unsupported
+    ///   * Internal error converting type
     #[cfg(feature = "loader")]
     pub fn from_clang<'tu>(typ: clang::Type<'tu>) -> Type {
         match typ.get_kind() {
@@ -93,19 +118,30 @@ impl Type {
     }
 }
 
+/// A C struct field
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StructField {
+    /// Amount of bytes between start of struct and this field
     pub offset: SizeInt,
+    // Name of field
     pub name: String,
+    // Type of field
     pub typ: Type,
 }
 
+/// A C struct
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Struct {
+    /// Fields of struct
     pub fields: Vec<StructField>,
 }
 
 impl Struct {
+    /// Convert from a `clang::Type` to a `Struct`
+    ///
+    /// ## Panics
+    ///   * The `clang::Type` is not a struct
+    ///   * Internal error converting struct
     #[cfg(feature = "loader")]
     pub fn from_clang<'tu>(typ: clang::Type<'tu>) -> Self {
         let fields = typ

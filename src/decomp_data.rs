@@ -1,3 +1,5 @@
+//! Patch conversion with decompilation data
+
 use crate::decl::Decl;
 use crate::decl::DeclKind;
 use crate::gameshark;
