@@ -165,7 +165,7 @@ impl FromStr for CodeLine {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // Split `TTXXXXXX YYYY` into `TTXXXXXX` and `YYYY`
         let tokens = s.split_whitespace().collect::<Vec<&str>>();
-        let (type_addr, value) = if let &[type_addr, value] = tokens.as_slice() {
+        let (type_addr, value) = if let [type_addr, value] = *tokens.as_slice() {
             Ok((type_addr, value))
         } else {
             Err(ParseError::FormatError)
