@@ -85,6 +85,8 @@ impl DecompData {
 
         use walkdir::WalkDir;
 
+        let repo = repo.join("sm64-decomp");
+
         // Check if SM64 decomp repo already cloned
         if !repo.exists() {
             // Clone SM64 decomp repo
@@ -93,7 +95,7 @@ impl DecompData {
                 .arg("--depth")
                 .arg("1")
                 .arg("https://github.com/n64decomp/sm64")
-                .arg(repo)
+                .arg(&repo)
                 .status()
                 .unwrap()
                 .success());
@@ -104,7 +106,7 @@ impl DecompData {
 
         // Compile code
         assert!(Command::new("make")
-            .current_dir(repo)
+            .current_dir(&repo)
             .status()
             .unwrap()
             .success());
@@ -155,7 +157,7 @@ impl DecompData {
         let index = clang::Index::new(&ctx, false, true);
 
         // Iterate over C source files
-        for entry in WalkDir::new(repo) {
+        for entry in WalkDir::new(&repo) {
             let entry = entry.unwrap();
             let path = entry.path();
 

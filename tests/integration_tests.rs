@@ -1,20 +1,22 @@
-fn gs_to_patch(name: &str, code: &str) -> String {
+use sm64gs2pc::DecompData;
+
+/// Helper for creating patches with minimal boilerplate
+fn gs_to_patch(decomp_data: &DecompData, name: &str, code: &str) -> String {
     let code = code.parse::<sm64gs2pc::gameshark::Code>().unwrap();
-    let patch = sm64gs2pc::DECOMP_DATA_STATIC
-        .gs_code_to_patch(name, code)
-        .unwrap();
+    let patch = decomp_data.gs_code_to_patch(name, code).unwrap();
     println!("{}", patch);
     patch
 }
 
-#[test]
-fn integration_tests() {
+/// Helper to run test cases with a decomp data
+fn patch_convert_test_cases(decomp_data: &DecompData) {
     // Sources for tests:
     //   * https://www.ign.com/faqs/2004/shindou-super-mario-64-rumble-pak-vers-game-shark-codes-573979
     //   * https://www.gamegenie.com/cheats/gameshark/n64/super_mario_64.html
 
     assert_eq!(
         gs_to_patch(
+            decomp_data,
             "Have 180 Stars",
             "8120770C FFFF
 8120770E FFFF
@@ -54,6 +56,7 @@ fn integration_tests() {
 
     assert_eq!(
         gs_to_patch(
+            decomp_data,
             "Moon Jump",
             "D033AFA1 0020
 8133B1BC 4220
@@ -79,6 +82,7 @@ D033B1BD 0020
 
     assert_eq!(
         gs_to_patch(
+            decomp_data,
             "Always have Metal Cap",
             "8133B176 0015",
         ),
@@ -94,6 +98,7 @@ D033B1BD 0020
 
     assert_eq!(
         gs_to_patch(
+            decomp_data,
             "Limbo Mario",
             "8033B3BC 00C0",
         ),
@@ -106,4 +111,32 @@ D033B1BD 0020
 +    /* 8033B3BC 00C0 */ gBodyStates[0].torsoAngle[0] = (gBodyStates[0].torsoAngle[0] & 0xffffffffffff00ff) | 0xc000;
  ",
     );
+}
+
+/// Run tests on static decomp data
+#[test]
+fn patch_convert_static() {
+    patch_convert_test_cases(&sm64gs2pc::DECOMP_DATA_STATIC)
+}
+
+/// Run tests on loaded decomp data
+#[test]
+#[cfg(feature = "loader")]
+fn patch_convert_loader() {
+    use std::path::Path;
+
+    // We can't just assert that the loaded version is equal to
+    // `DECOMP_DATA_STATIC`, because the loading process isn't completely
+    // deterministic (certain symbols are loaded at the same address and shadow
+    // each other).
+    //
+    // Instead, run all the tests on the loaded version.
+
+    let crate_root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let decomp_data = DecompData::load(
+        &crate_root.join("baserom.us.z64"),
+        &crate_root.join("target"),
+    );
+
+    patch_convert_test_cases(&decomp_data)
 }
