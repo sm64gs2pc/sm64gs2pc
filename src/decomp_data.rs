@@ -62,7 +62,7 @@ impl DecompData {
     /// Load from the SM64 decompilation codebase
     ///
     /// This function:
-    /// 1. Clones the SM64 decomp repo from git
+    /// 1. Clones the SM64 decomp repo from git if not already cloned
     /// 2. Copies the base ROM from `base_rom` into the repo
     /// 3. Compiles the code
     /// 4. Walks the codebase and loads the data
@@ -83,7 +83,9 @@ impl DecompData {
 
         use walkdir::WalkDir;
 
+        // Check if SM64 decomp repo already cloned
         if !repo.exists() {
+            // Clone SM64 decomp repo
             assert!(Command::new("git")
                 .arg("clone")
                 .arg("--depth")
@@ -95,27 +97,35 @@ impl DecompData {
                 .success());
         }
 
+        // Copy ROM into repo
         std::fs::copy(base_rom, repo.join("baserom.us.z64")).unwrap();
 
+        // Compile code
         assert!(Command::new("make")
             .current_dir(repo)
             .status()
             .unwrap()
             .success());
 
+        // Map from symbol name to address
         let mut syms = BTreeMap::<String, SizeInt>::new();
 
+        // Iterate over `.map` files
         for entry in WalkDir::new(repo.join("build/us")) {
             let entry = entry.unwrap();
             let path = entry.path();
             if path.extension() != Some(OsStr::new("map")) {
                 continue;
             }
+
+            // Iterate over `.map` file lines
             let file = File::open(path).unwrap();
             let file = BufReader::new(file);
             for line in file.lines() {
                 let line = line.unwrap();
                 let items = line.split("                ").collect::<Vec<&str>>();
+
+                // Load symbol and address
                 if let &[empty, addr, sym] = items.as_slice() {
                     if empty != "" {
                         continue;
@@ -142,15 +152,22 @@ impl DecompData {
         let ctx = clang::Clang::new().unwrap();
         let index = clang::Index::new(&ctx, false, true);
 
+        // Iterate over C source files
         for entry in WalkDir::new(repo) {
             let entry = entry.unwrap();
             let path = entry.path();
+
+            // Ignore tools since they aren't compiled into the ROM
             if path.starts_with(repo.join("tools")) {
                 continue;
             }
+
+            // Ignore non-C files
             if path.extension() != Some(OsStr::new("c")) {
                 continue;
             }
+
+            // Ignore certain files that have conflicts
             let file_name = path.file_name().unwrap().to_str().unwrap();
             if file_name.ends_with(".inc.c")
                 || file_name.ends_with("_fr.c")
@@ -158,6 +175,8 @@ impl DecompData {
             {
                 continue;
             }
+
+            // Parse C file
             let trans_unit = index
                 .parser(path)
                 .arguments(&[
@@ -192,22 +211,27 @@ impl DecompData {
 
             let entities = trans_unit.get_entity().get_children();
 
+            // Iterate over entities in C file
             for entity in &entities {
+                // Get entity name
                 let name = match entity.get_name() {
                     Some(name) => name,
                     None => continue,
                 };
 
+                // Get entity address
                 let addr = match syms.get(&name) {
                     Some(addr) => *addr,
                     None => continue,
                 };
 
+                // Ignore entities declared as `extern` to prevent duplicates
                 match entity.get_storage_class() {
                     Some(clang::StorageClass::Extern) => continue,
                     _ => {}
                 }
 
+                // Load declaration
                 let kind = match entity.get_kind() {
                     clang::EntityKind::FunctionDecl => DeclKind::Fn,
                     clang::EntityKind::VarDecl => DeclKind::Var {
@@ -215,12 +239,13 @@ impl DecompData {
                     },
                     _ => unimplemented!("clang entity: {:?}", entity),
                 };
-
                 let decl = Decl { kind, addr, name };
                 decomp_data.decls.insert(addr, decl);
             }
 
+            // Iterate over structs in C file
             for decl in clang::sonar::find_structs(entities) {
+                // Load struct
                 let struct_ = Struct::from_clang(decl.entity.get_type().unwrap());
                 decomp_data.structs.insert(decl.name, struct_);
             }
