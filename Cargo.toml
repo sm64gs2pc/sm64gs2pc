@@ -1,6 +1,6 @@
 [package]
 name = "sm64gs2pc"
-version = "1.0.0"
+version = "1.0.1"
 authors = ["Benjamin Levy <blevy@protonmail.com>"]
 edition = "2018"
 description = "Convert Super Mario 64 GameShark codes to SM64 PC port patches"
