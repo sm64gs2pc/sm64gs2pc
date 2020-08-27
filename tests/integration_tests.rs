@@ -125,18 +125,20 @@ fn patch_convert_static() {
 fn patch_convert_loader() {
     use std::path::Path;
 
+    // Irix's C compiler doesn't like long paths, so clone in `/tmp` to be safe
+    let repo = std::env::temp_dir();
+
+    let decomp_data = DecompData::load(
+        &Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/baserom.us.z64")),
+        &repo,
+    );
+
     // We can't just assert that the loaded version is equal to
     // `DECOMP_DATA_STATIC`, because the loading process isn't completely
     // deterministic (certain symbols are loaded at the same address and shadow
     // each other).
     //
     // Instead, run all the tests on the loaded version.
-
-    let crate_root = Path::new(env!("CARGO_MANIFEST_DIR"));
-    let decomp_data = DecompData::load(
-        &crate_root.join("baserom.us.z64"),
-        &crate_root.join("target"),
-    );
 
     patch_convert_test_cases(&decomp_data)
 }
