@@ -2,6 +2,7 @@
 [![docs.rs](https://docs.rs/sm64gs2pc/badge.svg)](https://docs.rs/sm64gs2pc)
 [![Checks](https://github.com/sm64gs2pc/sm64gs2pc/workflows/Checks/badge.svg)](https://github.com/sm64gs2pc/sm64gs2pc/actions?query=workflow%3AChecks)
 [![cargo-audit](https://github.com/sm64gs2pc/sm64gs2pc/workflows/cargo-audit/badge.svg)](https://github.com/sm64gs2pc/sm64gs2pc/actions?query=workflow%3Acargo-audit)
+[![Coverage Status](https://coveralls.io/repos/github/sm64gs2pc/sm64gs2pc/badge.svg?branch=master)](https://coveralls.io/github/sm64gs2pc/sm64gs2pc?branch=master)
 [![Dependabot Status](https://api.dependabot.com/badges/status?host=github&repo=sm64gs2pc/sm64gs2pc)](https://dependabot.com)
 
 # sm64gs2pc
