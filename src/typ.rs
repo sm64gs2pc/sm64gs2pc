@@ -51,7 +51,7 @@ impl Type {
     ///   * The `clang::Type` is unsupported
     ///   * Internal error converting type
     #[cfg(feature = "loader")]
-    pub fn from_clang<'tu>(typ: clang::Type<'tu>) -> Type {
+    pub fn from_clang(typ: clang::Type) -> Type {
         match typ.get_kind() {
             clang::TypeKind::Void
             | clang::TypeKind::FunctionPrototype
@@ -143,7 +143,7 @@ impl Struct {
     ///   * The `clang::Type` is not a struct
     ///   * Internal error converting struct
     #[cfg(feature = "loader")]
-    pub fn from_clang<'tu>(typ: clang::Type<'tu>) -> Self {
+    pub fn from_clang(typ: clang::Type) -> Self {
         let fields = typ
             .get_fields()
             .unwrap()

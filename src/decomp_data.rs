@@ -130,7 +130,7 @@ impl DecompData {
                 let items = line.split("                ").collect::<Vec<&str>>();
 
                 // Load symbol and address
-                if let &[empty, addr, sym] = items.as_slice() {
+                if let [empty, addr, sym] = *items.as_slice() {
                     if empty != "" {
                         continue;
                     }
@@ -230,9 +230,8 @@ impl DecompData {
                 };
 
                 // Ignore entities declared as `extern` to prevent duplicates
-                match entity.get_storage_class() {
-                    Some(clang::StorageClass::Extern) => continue,
-                    _ => {}
+                if let Some(clang::StorageClass::Extern) = entity.get_storage_class() {
+                    continue;
                 }
 
                 // Load declaration
