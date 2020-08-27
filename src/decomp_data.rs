@@ -254,6 +254,12 @@ impl DecompData {
         decomp_data
     }
 
+    /// Get the size of the type `typ` in bytes
+    ///
+    /// ## Errors
+    /// This function fails if
+    ///   * A struct lookup failed
+    ///   * The type or one of its inner types is ignored
     fn size_of_type(&self, typ: &Type) -> Result<SizeInt, ToPatchError> {
         match typ {
             Type::AnonStruct(struct_) => self.size_of_struct(&struct_),
@@ -274,6 +280,14 @@ impl DecompData {
         }
     }
 
+    /// Get the size of the struct `struct_` in bytes
+    ///
+    /// The struct is assumed to have no padding, because SM64 doesn't seem to
+    /// have any struct padding.
+    ///
+    /// ## Errors
+    /// This function fails if
+    ///   * The type of a field or one of its inner types is ignored
     fn size_of_struct(&self, struct_: &Struct) -> Result<SizeInt, ToPatchError> {
         struct_
             .fields
@@ -282,7 +296,12 @@ impl DecompData {
             .sum()
     }
 
+    /// Get the lvalue corresponding to the address
+    ///
+    /// For example, if `addr` is `0x8033B176`, the lvalue is
+    /// `gMarioStates[0].flags`.
     fn addr_to_lvalue(&self, addr: SizeInt) -> Result<LeftValue, ToPatchError> {
+        // Get the declaration containing the address
         let decl = self
             .decls
             .values()
@@ -290,11 +309,17 @@ impl DecompData {
             .find(|decl| decl.addr <= addr)
             .context(NoDecl)?;
 
+        // Get the declaration's type
         let typ = match &decl.kind {
             DeclKind::Fn => return Err(ToPatchError::FnPatch),
             DeclKind::Var { typ } => typ.clone(),
         };
 
+        // Do recursion to accumulate the declaration into an lvalue. For
+        // example, the declaration might be an array of structs, so the lvalue
+        // should be a field on one of the structs.
+
+        // Initial accumulator, the base declaration
         let accum = LeftValue {
             kind: LeftValueKind::Ident {
                 name: decl.name.clone(),
@@ -303,7 +328,7 @@ impl DecompData {
             addr: decl.addr,
         };
 
-        self.addr_and_type_to_lvalue(accum, addr, decl.addr)
+        self.addr_accum_to_lvalue(accum, addr, decl.addr)
     }
 
     fn addr_and_struct_to_lvalue(
@@ -331,10 +356,12 @@ impl DecompData {
             addr: accum_addr,
         };
 
-        self.addr_and_type_to_lvalue(accum, addr, accum_addr)
+        self.addr_accum_to_lvalue(accum, addr, accum_addr)
     }
 
-    fn addr_and_type_to_lvalue(
+    /// Get the lvalue corresponding to the address, given an initial
+    /// accumulator
+    fn addr_accum_to_lvalue(
         &self,
         accum: LeftValue,
         addr: SizeInt,
@@ -371,7 +398,7 @@ impl DecompData {
                     addr: accum_addr,
                 };
 
-                self.addr_and_type_to_lvalue(accum, addr, accum_addr)
+                self.addr_accum_to_lvalue(accum, addr, accum_addr)
             }
             Type::Pointer { .. } => Err(ToPatchError::PointerAssign),
             Type::Ignored => unimplemented!("ignored type"),
@@ -473,6 +500,12 @@ impl DecompData {
         Ok(patch)
     }
 
+    /// Create a line of C source code that does a write to an address
+    ///
+    /// ## Parameters
+    ///   * `write_size` - Size of value to write
+    ///   * `value` - Value to write
+    ///   * `addr` - Address to write value
     fn format_write(
         &self,
         write_size: gameshark::ValueSize,
@@ -481,10 +514,25 @@ impl DecompData {
     ) -> Result<String, ToPatchError> {
         let lvalue = self.addr_to_lvalue(addr)?;
 
+        // Get bit shift amount
         let shift = self.lvalue_get_shift(&lvalue, write_size, addr)?;
 
-        let (shift, next_write, write_size, value) = match shift {
+        // Update variables and do recursion if the write overlaps multiple
+        // lvalues.
+        let (
+            // Bit shift amount
+            shift,
+            // Second write to append to output
+            next_write,
+            // Updated size of value to write
+            write_size,
+            // Updated value to write
+            value,
+        ) = match shift {
+            // Write is entirely within one lvalue; keep the same variables.
             Some(shift) => (shift, None, write_size, value),
+
+            // Write overlaps multiple lvalues
             None => (
                 0,
                 Some(self.format_write(gameshark::ValueSize::Bits8, value & 0xff, addr + 1)?),
@@ -508,6 +556,13 @@ impl DecompData {
         ))
     }
 
+    /// Create a line of C source code that checks the value at an address
+    ///
+    /// ## Parameters
+    ///   * `read_size` - Size of value to read
+    ///   * `value` - Value to compare with
+    ///   * `addr` - Address to read value from
+    ///   * `check_eq` - Whether the operation is `==` or `!=`
     fn format_check(
         &self,
         read_size: gameshark::ValueSize,
@@ -517,10 +572,16 @@ impl DecompData {
     ) -> Result<String, ToPatchError> {
         let lvalue = self.addr_to_lvalue(addr)?;
 
+        // Get bit shift amount
         let shift = self.lvalue_get_shift(&lvalue, read_size, addr)?;
 
+        // Update variables and do recursion if the read overlaps multiple
+        // lvalues.
         let (shift, next_read, read_size, value) = match shift {
+            // Read is entirely within one lvalue; keep the same variables.
             Some(shift) => (shift, None, read_size, value),
+
+            // Read overlaps multiple lvalues
             None => (
                 0,
                 Some(self.format_check(
@@ -549,6 +610,14 @@ impl DecompData {
         ))
     }
 
+    /// Get the left bit shift amount required to access a `value_size`d value
+    /// at `addr` in `lvalue`
+    ///
+    /// ## Return values
+    ///   * `Ok(Some(shift))` - Success
+    ///   * `Ok(None)` - No shift exists, because `value_size` at `addr`
+    ///                  overlaps the edge of the lvalue.
+    ///   * `Err(err)` - Error getting size of lvalue
     fn lvalue_get_shift(
         &self,
         lvalue: &LeftValue,
