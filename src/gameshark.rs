@@ -30,14 +30,21 @@ use snafu::ensure;
 use snafu::ResultExt;
 use snafu::Snafu;
 
+/// Error parsing a GameShark code
 #[derive(Debug, Snafu)]
 pub enum ParseError {
+    /// Error parsing hex string
     #[snafu(display("GameShark code integer parse: {}", source))]
-    ParseIntError { source: std::num::ParseIntError },
+    ParseIntError {
+        /// Error parsing the integer
+        source: std::num::ParseIntError,
+    },
 
+    /// Error with general code format
     #[snafu(display("GameShark code format error"))]
     FormatError,
 
+    /// Unsupported GameShark code type
     #[snafu(display("Unknown GameShark code type"))]
     CodeTypeError,
 }
@@ -52,7 +59,12 @@ pub enum CodeLine {
     /// ```
     ///
     /// Writes `YY` to address `XXXXXX`.
-    Write8 { addr: SizeInt, value: u8 },
+    Write8 {
+        /// Address of write `XXXXXX`
+        addr: SizeInt,
+        /// Written value `YY`
+        value: u8,
+    },
 
     /// 16-bit Write
     ///
@@ -61,7 +73,12 @@ pub enum CodeLine {
     /// ```
     ///
     /// Writes `YYYY` to address `XXXXXX`.
-    Write16 { addr: SizeInt, value: u16 },
+    Write16 {
+        /// Address of write `XXXXXX`
+        addr: SizeInt,
+        /// Written value `YYYY`
+        value: u16,
+    },
 
     /// 8-bit check equal
     ///
@@ -72,7 +89,12 @@ pub enum CodeLine {
     ///
     /// Execute the code `ZZZZZZZZ ZZZZ` if and only if the value in address
     /// `XXXXXX` is `YY`.
-    IfEq8 { addr: SizeInt, value: u8 },
+    IfEq8 {
+        /// Address of read `XXXXXX`
+        addr: SizeInt,
+        /// Compared value `YY`
+        value: u8,
+    },
 
     /// 16-bit check equal
     ///
@@ -83,7 +105,12 @@ pub enum CodeLine {
     ///
     /// Execute the code `ZZZZZZZZ ZZZZ` if and only if the value in address
     /// `XXXXXX` is `YYYY`.
-    IfEq16 { addr: SizeInt, value: u16 },
+    IfEq16 {
+        /// Address of read `XXXXXX`
+        addr: SizeInt,
+        /// Compared value `YYYY`
+        value: u16,
+    },
 
     /// 8-bit check unequal
     ///
@@ -94,7 +121,12 @@ pub enum CodeLine {
     ///
     /// Execute the code `ZZZZZZZZ ZZZZ` if and only if the value in address
     /// `XXXXXX` is *not* `YY`.
-    IfNotEq8 { addr: SizeInt, value: u8 },
+    IfNotEq8 {
+        /// Address of read `XXXXXX`
+        addr: SizeInt,
+        /// Compared value `YY`
+        value: u8,
+    },
 
     /// 16-bit check unequal
     ///
@@ -105,10 +137,16 @@ pub enum CodeLine {
     ///
     /// Execute the code `ZZZZZZZZ ZZZZ` if and only if the value in address
     /// `XXXXXX` is *not* `YYYY`.
-    IfNotEq16 { addr: SizeInt, value: u16 },
+    IfNotEq16 {
+        /// Address of read `XXXXXX`
+        addr: SizeInt,
+        /// Compared value `YYYY`
+        value: u16,
+    },
 }
 
 impl CodeLine {
+    /// Get the address that this code writes to or reads from
     pub fn addr(self) -> SizeInt {
         match self {
             CodeLine::Write8 { addr, .. } => addr,
@@ -212,13 +250,24 @@ impl FromStr for Code {
     }
 }
 
+/// Size of a value written or read from a GameShark code
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ValueSize {
+    /// 8-Bit value
     Bits8,
+    /// 16-Bit value
     Bits16,
 }
 
 impl ValueSize {
+    /// Amount of bytes of the value
+    ///
+    /// ```
+    /// use sm64gs2pc::gameshark::ValueSize;
+    ///
+    /// assert_eq!(ValueSize::Bits8.num_bytes(), 1);
+    /// assert_eq!(ValueSize::Bits16.num_bytes(), 2);
+    /// ```
     pub fn num_bytes(self) -> SizeInt {
         match self {
             ValueSize::Bits8 => 1,
@@ -226,6 +275,17 @@ impl ValueSize {
         }
     }
 
+    /// Get mask that can be bitwise AND'ed with an integer to isolate the value
+    /// size.
+    ///
+    /// ```
+    /// use sm64gs2pc::gameshark::ValueSize;
+    ///
+    /// assert_eq!(ValueSize::Bits8.mask(), 0xff);
+    /// assert_eq!(ValueSize::Bits16.mask(), 0xffff);
+    ///
+    /// assert_eq!(ValueSize::Bits8.mask() & 0xaabbccdd, 0xdd);
+    /// ```
     pub fn mask(self) -> u64 {
         match self {
             ValueSize::Bits8 => 0xff,

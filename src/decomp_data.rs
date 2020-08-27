@@ -19,6 +19,13 @@ use serde::Serialize;
 use snafu::OptionExt;
 use snafu::Snafu;
 
+/// Symbol data from the [Super Mario 64 decompilation][1]
+///
+/// This information is used for converting GameShark codes to PC port patches.
+/// It can be loaded from the decompilation codebase or a pre-compiled version
+/// can be accessed at `DECOMP_DATA_STATIC`.
+///
+/// [1]: https://github.com/n64decomp/sm64
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct DecompData {
     decls: BTreeMap<SizeInt, Decl>,
@@ -52,6 +59,20 @@ pub enum ToPatchError {
 }
 
 impl DecompData {
+    /// Load from the SM64 decompilation codebase
+    ///
+    /// This function:
+    /// 1. Clones the SM64 decomp repo from git
+    /// 2. Copies the base ROM from `base_rom` into the repo
+    /// 3. Compiles the code
+    /// 4. Walks the codebase and loads the data
+    ///
+    /// ## Parameters
+    ///   * `base_rom` - Path to a `baserom.us.z64`
+    ///   * `repo` - Path where the SM64 decompilation repo should be cloned
+    ///
+    /// ## Panics
+    /// This function panics if any of its operations fail.
     #[cfg(feature = "loader")]
     pub fn load(base_rom: &Path, repo: &Path) -> Self {
         use std::ffi::OsStr;
