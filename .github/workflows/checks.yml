@@ -28,12 +28,18 @@ jobs:
           wget https://github.com/n64decomp/qemu-irix/releases/download/v2.11-deb/qemu-irix-2.11.0-2169-g32ab296eef_amd64.deb -O qemu-irix.deb
           sudo dpkg --install qemu-irix.deb
 
+      - name: Install nightly Rust toolchain (for grcov)
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+
       - name: Install stable Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
-          override: true
+          default: true
 
       # Clippy needs to be run first so that warnings become CI failures
 
