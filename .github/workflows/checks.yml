@@ -70,9 +70,25 @@ jobs:
         with:
           command: test
           args: --all-features
+        env:
+          CARGO_INCREMENTAL: 0
+          RUSTFLAGS: -Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests
+          RUSTDOCFLAGS: -Cpanic=abort
 
       - name: Run cargo fmt
         uses: actions-rs/cargo@v1
         with:
           command: fmt
           args: --all -- --check
+
+      - name: Gather coverage data
+        id: coverage
+        uses: actions-rs/grcov@v0.1
+        with:
+          config: .github/actions-rs/grcov.yml
+
+      - name: Coveralls upload
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ${{ steps.coverage.outputs.report }}
