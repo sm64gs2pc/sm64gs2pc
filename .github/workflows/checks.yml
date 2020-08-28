@@ -13,6 +13,7 @@ jobs:
         features: ["", "--all-features"]
     steps:
       - uses: actions/checkout@v2
+      - run: sudo apt-get install libclang-10-dev
       - run: cargo clippy ${{ matrix.features }} -- -D warnings
 
   cargo-test:
@@ -23,6 +24,7 @@ jobs:
         features: ["", "--all-features"]
     steps:
       - uses: actions/checkout@v2
+      - run: sudo apt-get install libclang-10-dev
       - run: cargo test ${{ matrix.features }}
 
   cargo-fmt:
@@ -51,7 +53,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo apt install libclang-10-dev build-essential git binutils-mips-linux-gnu python3 libaudiofile-dev
+          sudo apt-get install libclang-10-dev build-essential git binutils-mips-linux-gnu python3 libaudiofile-dev
           wget https://github.com/n64decomp/qemu-irix/releases/download/v2.11-deb/qemu-irix-2.11.0-2169-g32ab296eef_amd64.deb -O qemu-irix.deb
           sudo dpkg --install qemu-irix.deb
 
