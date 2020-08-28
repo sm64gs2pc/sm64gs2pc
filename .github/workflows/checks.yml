@@ -19,8 +19,8 @@ jobs:
           token: ${{ secrets.ROMS_CLONE_TOKEN }}
           path: roms
 
-      - name: Move base ROM to repo root
-        run: mv roms/baserom.us.z64 .
+      - name: Move base ROM to right place
+        run: mv roms/baserom.us.z64 sm64gs2pc/
 
       - name: Install dependencies
         run: |
@@ -91,13 +91,12 @@ jobs:
           RUSTDOCFLAGS: -Cpanic=abort
 
       - name: Gather coverage data
-        id: coverage
-        uses: actions-rs/grcov@v0.1
-        with:
-          config: .github/actions-rs/grcov.yml
+        run: |
+          cargo install grcov
+          grcov target/debug --branch --ignore-not-existing --llvm --output-path lcov.info --output-type lcov --ignore "/*" --ignore "../*"
 
       - name: Coveralls upload
         uses: coverallsapp/github-action@master
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: ${{ steps.coverage.outputs.report }}
+          path-to-lcov: lcov.info
