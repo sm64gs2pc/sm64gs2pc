@@ -1,0 +1,17 @@
+[package]
+name = "sm64gs2pc-web"
+version = "0.1.0"
+authors = ["Benjamin Levy <blevy@protonmail.com>"]
+edition = "2018"
+publish = false
+
+[dependencies]
+sm64gs2pc = { path = "../sm64gs2pc" }
+yew = "0.17.3"
+wasm-bindgen = "0.2.67"
+web-sys = { version = "0.3.44", features = ["HtmlAnchorElement", "CssStyleDeclaration"] }
+js-sys = "0.3.44"
+heck = "0.3.1"
+
+[lib]
+crate_type = ["cdylib"]

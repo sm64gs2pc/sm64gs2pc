@@ -1,4 +1,5 @@
 [workspace]
 members = [
     "sm64gs2pc",
+    "sm64gs2pc-web",
 ]
