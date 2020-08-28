@@ -60,7 +60,7 @@ impl Component for App {
             Msg::InputGameSharkCode { gameshark_code } => self.gameshark_code = gameshark_code,
             Msg::DownloadPatch => {
                 if let Ok(patch) = &self.output {
-                    download_patch(&self.get_filename(), patch)
+                    download_text_file(&self.get_filename(), patch)
                 }
             }
         }
@@ -71,13 +71,16 @@ impl Component for App {
     fn view(&self) -> Html {
         let output = match &self.output {
             Ok(patch) => html!(<pre style="color: blue"> { patch } </pre>),
-            Err(err) => html!(<pre style="color: red"> { err } </pre>),
+            Err(err) => html!(<pre style="color: red"> { format!("Error: {}", err) } </pre>),
         };
 
         html! {
             <>
                 <h1 style="font-family: sans-serif"> { "sm64gs2pc" } </h1>
+
                 <hr />
+
+                // Cheat name input
                 <input
                     type="text"
                     placeholder="Cheat name"
@@ -86,6 +89,7 @@ impl Component for App {
                     })
                 />
                 <br />
+                // Gameshark code input
                 <textarea
                     placeholder="GameShark code"
                     oninput=self.link.callback(|input_data: InputData| {
@@ -93,13 +97,17 @@ impl Component for App {
                     })
                 />
                 <br />
+                // Patch download button
                 <button
                     disabled=self.output.is_err()
                     onclick=self.link.callback(|_| Msg::DownloadPatch)
                 >
                     { format!("Download {}", self.get_filename()) }
                 </button>
+
                 <hr />
+
+                // Patch preview or error
                 { output }
             </>
         }
@@ -107,12 +115,15 @@ impl Component for App {
 }
 
 impl App {
+    /// Generate output of patch conversion
     fn generate_output(&self) -> Result<String, String> {
+        // Parse GameShark code
         let code = self
             .gameshark_code
             .parse::<sm64gs2pc::gameshark::Code>()
             .map_err(|err| err.to_string())?;
 
+        // Convert to patch
         let patch = sm64gs2pc::DECOMP_DATA_STATIC
             .gs_code_to_patch(&self.cheat_name, code)
             .map_err(|err| err.to_string())?;
@@ -120,6 +131,7 @@ impl App {
         Ok(patch)
     }
 
+    /// Filename for downloading patch
     fn get_filename(&self) -> String {
         format!(
             "{}.patch",
@@ -128,25 +140,32 @@ impl App {
     }
 }
 
-fn download_patch(filename: &str, patch: &str) {
+/// Download a text file with a given filename and text
+fn download_text_file(filename: &str, file_text: &str) {
+    // Get document
     let document = web_sys::window()
         .expect("window")
         .document()
         .expect("document");
 
+    // Make <a> tag
     let anchor = document
         .create_element("a")
         .expect("create <a>")
         .dyn_into::<web_sys::HtmlAnchorElement>()
         .expect("dyn into <a>");
 
+    // Make URL of file
     let url = format!(
         "data:text/plain;charset=utf-8,{}",
-        String::from(js_sys::encode_uri_component(patch))
+        String::from(js_sys::encode_uri_component(file_text))
     );
 
+    // Make <a> download file
     anchor.set_href(&url);
     anchor.set_download(filename);
+
+    // Make <a> invisible
     anchor
         .style()
         .set_property("display", "none")
@@ -155,8 +174,11 @@ fn download_patch(filename: &str, patch: &str) {
     let body = document.body().expect("document.body");
     let node = web_sys::Node::from(anchor.clone());
 
+    // Add <a> to <body>
     body.append_child(&node).expect("body.append_child(a)");
+    // Click the download link
     anchor.click();
+    // Remove <a> from <body>
     body.remove_child(&node).expect("body.remove_child(a)");
 }
 
