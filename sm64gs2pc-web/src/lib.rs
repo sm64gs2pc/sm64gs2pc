@@ -107,6 +107,23 @@ impl Component for App {
 
                 <hr />
 
+                <h2> { "Base patches" } </h2>
+                <p> { "Apply one of these before the cheat patch" } </p>
+                <ul>
+                    <li>
+                        <a href="/pkg/gameshark-base-sm64-port.patch">
+                            { "sm64-port" }
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/pkg/gameshark-base-sm64ex-nightly.patch">
+                            { "sm64ex nightly" }
+                        </a>
+                    </li>
+                </ul>
+
+                <hr />
+
                 // Patch preview or error
                 { output }
             </>
