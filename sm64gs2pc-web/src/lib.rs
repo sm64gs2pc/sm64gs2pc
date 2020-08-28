@@ -7,15 +7,33 @@ use yew::prelude::*;
 
 /// Main app component
 struct App {
+    /// Link to self
     link: ComponentLink<Self>,
+
+    /// Name of the cheat
     cheat_name: String,
+
+    /// The GameShark code to convert
     gameshark_code: String,
+
+    /// Output of patch conversion. The patch is displayed in blue and errors
+    /// are in red.
     output: Result<String, String>,
 }
 
+/// Main component message
 enum Msg {
-    InputCheatName { cheat_name: String },
-    InputGameSharkCode { gameshark_code: String },
+    /// Cheat name was edited
+    InputCheatName {
+        /// New cheat name
+        cheat_name: String,
+    },
+    /// GameShark code was edited
+    InputGameSharkCode {
+        /// New GameShark code
+        gameshark_code: String,
+    },
+    /// Patch download button was clicked
     DownloadPatch,
 }
 
@@ -42,8 +60,7 @@ impl Component for App {
             Msg::InputGameSharkCode { gameshark_code } => self.gameshark_code = gameshark_code,
             Msg::DownloadPatch => {
                 if let Ok(patch) = &self.output {
-                    let filename = format!("sm64gs2pc-{}.patch", self.cheat_name.to_kebab_case());
-                    download_patch(&filename, patch)
+                    download_patch(&self.get_filename(), patch)
                 }
             }
         }
@@ -80,15 +97,13 @@ impl Component for App {
                     disabled=self.output.is_err()
                     onclick=self.link.callback(|_| Msg::DownloadPatch)
                 >
-                    { "Download patch" }
+                    { format!("Download {}", self.get_filename()) }
                 </button>
                 <hr />
                 { output }
             </>
         }
     }
-
-    fn destroy(&mut self) {}
 }
 
 impl App {
@@ -103,6 +118,13 @@ impl App {
             .map_err(|err| err.to_string())?;
 
         Ok(patch)
+    }
+
+    fn get_filename(&self) -> String {
+        format!(
+            "{}.patch",
+            format!("sm64gs2pc-{}", self.cheat_name).to_kebab_case()
+        )
     }
 }
 
@@ -138,6 +160,7 @@ fn download_patch(filename: &str, patch: &str) {
     body.remove_child(&node).expect("body.remove_child(a)");
 }
 
+/// App entry point
 #[wasm_bindgen(start)]
 pub fn run_app() {
     yew::start_app::<App>()
