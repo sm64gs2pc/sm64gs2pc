@@ -16,16 +16,13 @@ jobs:
       - run: sudo apt-get install libclang-10-dev
       - run: cargo clippy ${{ matrix.features }} -- -D warnings
 
+  # `cargo test --all-features` is handled by the coveralls job
   cargo-test:
     name: Run cargo test
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        features: ["", "--all-features"]
     steps:
       - uses: actions/checkout@v2
-      - run: sudo apt-get install libclang-10-dev
-      - run: cargo test ${{ matrix.features }}
+      - run: cargo test
 
   cargo-fmt:
     name: Check rustfmt formatting
