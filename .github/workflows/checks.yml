@@ -56,6 +56,7 @@ jobs:
           sudo apt-get install libclang-10-dev build-essential git binutils-mips-linux-gnu python3 libaudiofile-dev
           wget https://github.com/n64decomp/qemu-irix/releases/download/v2.11-deb/qemu-irix-2.11.0-2169-g32ab296eef_amd64.deb -O qemu-irix.deb
           sudo dpkg --install qemu-irix.deb
+          rustup toolchain install nightly
 
       - name: Run cargo test --all-features and get coverage
         run: cargo +nightly test --all-features
