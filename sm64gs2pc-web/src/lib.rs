@@ -80,6 +80,25 @@ impl Component for App {
 
                 <hr />
 
+                <h2> { "Base patches" } </h2>
+                <p> { "Apply one of these before the cheat patch." } </p>
+                <p> { "After applying a base patch, you can apply an unlimited amount of GameShark code patches." } </p>
+                <ul>
+                    <li>
+                        <a href="/pkg/gameshark-base-sm64-port.patch">
+                            { "sm64-port" }
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/pkg/gameshark-base-sm64ex-nightly.patch">
+                            { "sm64ex nightly" }
+                        </a>
+                    </li>
+                </ul>
+
+                <hr />
+
+                <h2> { "Convert GameShark code to PC port patch" } </h2>
                 // Cheat name input
                 <input
                     type="text"
@@ -107,24 +126,8 @@ impl Component for App {
 
                 <hr />
 
-                <h2> { "Base patches" } </h2>
-                <p> { "Apply one of these before the cheat patch" } </p>
-                <ul>
-                    <li>
-                        <a href="/pkg/gameshark-base-sm64-port.patch">
-                            { "sm64-port" }
-                        </a>
-                    </li>
-                    <li>
-                        <a href="/pkg/gameshark-base-sm64ex-nightly.patch">
-                            { "sm64ex nightly" }
-                        </a>
-                    </li>
-                </ul>
-
-                <hr />
-
                 // Patch preview or error
+                <h2> { "Output" } </h2>
                 { output }
             </>
         }
