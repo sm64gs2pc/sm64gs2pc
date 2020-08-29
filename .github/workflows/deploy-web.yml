@@ -3,8 +3,6 @@ name: Deploy web app
 on:
   push:
     branches: [ master ]
-  pull_request:
-    branches: [ master ]
 
 jobs:
   deploy-web:
