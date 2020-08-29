@@ -600,7 +600,7 @@ checksum = "c111b5bd5695e56cffe5129854aa230b39c93a305372fdbb2668ca2394eea9f8"
 
 [[package]]
 name = "sm64gs2pc"
-version = "1.0.3"
+version = "1.0.4"
 dependencies = [
  "bincode",
  "clang",
