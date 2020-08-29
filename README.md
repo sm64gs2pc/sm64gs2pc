@@ -11,20 +11,37 @@
 
 Convert Super Mario 64 GameShark codes to SM64 PC port patches
 
+https://sm64gs2pc.github.io
+
 ## About
 
 This tool converts GameShark cheat codes for Super Mario 64 into patches for PC
 ports of Super Mario 64, such as
 [sm64-port](https://github.com/sm64-port/sm64-port) and
-[sm64ex](https://github.com/sm64pc/sm64ex).
+[sm64ex](https://github.com/sm64pc/sm64ex). It's available as both a web app and
+a command-line tool.
 
-## Installing
+## Web app
+
+A web app can be accessed at https://sm64gs2pc.github.io
+
+### Compiling
+
+To compile the sm64gs2pc web app yourself:
+1. Install [wasm-pack](https://github.com/rustwasm/wasm-pack)
+2. `cd sm64gs2pc-web`
+3. `./build.sh`
+4. The web app will be built in `static/`
+
+## Command-line tool
+
+### Installing
 
 1. Install [Rust](https://rustup.rs/)
 2. Run `cargo install sm64gs2pc`
      * On Unix, this installs to `~/.cargo/bin` by default
 
-## Usage
+### Usage
 
 ```
 sm64gs2pc --code <code> --name <name> > output.patch
