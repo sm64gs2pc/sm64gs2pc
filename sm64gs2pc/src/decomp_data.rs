@@ -30,7 +30,9 @@ use snafu::Snafu;
 /// [1]: https://github.com/n64decomp/sm64
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct DecompData {
+    /// Map from memory addresses to declarations
     decls: BTreeMap<SizeInt, Decl>,
+    /// Map from struct names to structs
     structs: HashMap<String, Struct>,
 }
 
