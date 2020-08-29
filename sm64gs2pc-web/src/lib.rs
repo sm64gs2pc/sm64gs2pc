@@ -1,4 +1,4 @@
-#![recursion_limit = "256"]
+#![recursion_limit = "512"]
 
 use heck::KebabCase;
 use wasm_bindgen::prelude::*;
@@ -70,13 +70,28 @@ impl Component for App {
 
     fn view(&self) -> Html {
         let output = match &self.output {
-            Ok(patch) => html!(<pre style="color: blue"> { patch } </pre>),
-            Err(err) => html!(<pre style="color: red"> { format!("Error: {}", err) } </pre>),
+            Ok(patch) => html! {
+                <pre style="color: blue"> { patch } </pre>
+            },
+            Err(err) => html! {
+                <>
+                    <pre style="color: red"> { format!("Error: {}", err) } </pre>
+                    <p>
+                        { "See the " }
+                        <a href="https://github.com/sm64gs2pc/sm64gs2pc#limitations">
+                            { "limitations" }
+                        </a>
+                        { "." }
+                    </p>
+                </>
+            },
         };
 
         html! {
             <>
-                <h1 style="font-family: sans-serif"> { "sm64gs2pc" } </h1>
+                <h1> { "sm64gs2pc" } </h1>
+                <p> { "Convert Super Mario 64 GameShark codes to SM64 PC port patches" } </p>
+                <a href="https://github.com/sm64gs2pc/sm64gs2pc"> { "GitHub repo" } </a>
 
                 <hr />
 
