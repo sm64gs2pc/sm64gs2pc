@@ -129,6 +129,10 @@ impl Component for App {
                 // Patch preview or error
                 <h2> { "Output" } </h2>
                 { output }
+
+                <hr />
+
+                <img alt="logo" src="https://raw.githubusercontent.com/sm64gs2pc/sm64gs2pc/master/logo.png" />
             </>
         }
     }
