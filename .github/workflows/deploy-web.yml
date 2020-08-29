@@ -1,0 +1,31 @@
+name: Deploy web app
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  deploy-web:
+    name: Deploy web app to GitHub Pages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Build web app
+        run: ./build.sh
+        working-directory: sm64gs2pc-web
+
+      - name: Delete pkg/.gitignore to prevent deployment from failing
+        run: rm -f sm64gs2pc-web/static/pkg/.gitignore
+
+      - name: Push to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@releases/v3
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: gh-pages
+          FOLDER: sm64gs2pc-web/static
