@@ -24,6 +24,7 @@ jobs:
       - name: Push to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@releases/v3
         with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY_NAME: sm64gs2pc/sm64gs2pc.github.io
+          ACCESS_TOKEN: ${{ secrets.ROMS_REPO_CLONE_AND_PAGES_PUSH }}
           BRANCH: gh-pages
           FOLDER: sm64gs2pc-web/static

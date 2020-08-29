@@ -42,7 +42,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: sm64gs2pc/roms
-          token: ${{ secrets.ROMS_CLONE_TOKEN }}
+          token: ${{ secrets.ROMS_REPO_CLONE_AND_PAGES_PUSH }}
           path: roms
 
       - name: Move base ROM to right place
