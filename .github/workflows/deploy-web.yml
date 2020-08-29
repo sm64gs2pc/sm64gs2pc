@@ -25,6 +25,7 @@ jobs:
         uses: JamesIves/github-pages-deploy-action@releases/v3
         with:
           REPOSITORY_NAME: sm64gs2pc/sm64gs2pc.github.io
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ACCESS_TOKEN: ${{ secrets.ROMS_REPO_CLONE_AND_PAGES_PUSH }}
           BRANCH: master
           FOLDER: sm64gs2pc-web/static
