@@ -30,34 +30,37 @@ use snafu::Snafu;
 /// [1]: https://github.com/n64decomp/sm64
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct DecompData {
+    /// Map from memory addresses to declarations
     decls: BTreeMap<SizeInt, Decl>,
+    /// Map from struct names to structs
     structs: HashMap<String, Struct>,
 }
 
 #[derive(Debug, Clone, Snafu)]
 pub enum ToPatchError {
     #[snafu(display(
-        "This tool does not support GameShark codes that modify functions, only data"
+        "{:#x}: This tool does not support GameShark codes that modify functions, only data",
+        addr
     ))]
-    FnPatch,
+    FnPatch { addr: SizeInt },
 
     #[snafu(display("Tried to process ignored or unsupported type"))]
     IgnoredType,
 
-    #[snafu(display("No declaration found for address"))]
-    NoDecl,
+    #[snafu(display("{:#x}: No declaration found for address", addr))]
+    NoDecl { addr: SizeInt },
 
     #[snafu(display("No struct '{}' found", name))]
     NoStruct { name: String },
 
-    #[snafu(display("No struct field found for address"))]
-    NoField,
+    #[snafu(display("{:#x}: No struct field found for address", addr))]
+    NoField { addr: SizeInt },
 
-    #[snafu(display("Code accesses an array out of bounds: {}", lvalue))]
-    ArrayOutOfBounds { lvalue: LeftValue },
+    #[snafu(display("{:#x}: Code accesses an array out of bounds: {}", addr, lvalue))]
+    ArrayOutOfBounds { addr: SizeInt, lvalue: LeftValue },
 
-    #[snafu(display("Code assigns to a pointer"))]
-    PointerAssign,
+    #[snafu(display("{:#x}: Code assigns to a pointer", addr))]
+    PointerAssign { addr: SizeInt },
 }
 
 impl DecompData {
@@ -310,11 +313,11 @@ impl DecompData {
             .values()
             .rev()
             .find(|decl| decl.addr <= addr)
-            .context(NoDecl)?;
+            .context(NoDecl { addr })?;
 
         // Get the declaration's type
         let typ = match &decl.kind {
-            DeclKind::Fn => return Err(ToPatchError::FnPatch),
+            DeclKind::Fn => return Err(ToPatchError::FnPatch { addr }),
             DeclKind::Var { typ } => typ.clone(),
         };
 
@@ -346,7 +349,7 @@ impl DecompData {
             .iter()
             .rev()
             .find(|field| accum_addr + field.offset <= addr)
-            .context(NoField)?;
+            .context(NoField { addr })?;
 
         let accum_addr = accum_addr + field.offset;
 
@@ -387,7 +390,10 @@ impl DecompData {
                 let index = (addr - accum_addr) / element_type_size;
 
                 if index >= num_elements {
-                    return Err(ToPatchError::ArrayOutOfBounds { lvalue: accum });
+                    return Err(ToPatchError::ArrayOutOfBounds {
+                        addr,
+                        lvalue: accum,
+                    });
                 }
 
                 let accum_addr = accum_addr + index * element_type_size;
@@ -403,8 +409,8 @@ impl DecompData {
 
                 self.addr_accum_to_lvalue(accum, addr, accum_addr)
             }
-            Type::Pointer { .. } => Err(ToPatchError::PointerAssign),
-            Type::Ignored => unimplemented!("ignored type"),
+            Type::Pointer { .. } => Err(ToPatchError::PointerAssign { addr }),
+            Type::Ignored => Err(ToPatchError::IgnoredType),
         }
     }
 

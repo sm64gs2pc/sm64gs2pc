@@ -34,19 +34,29 @@ use snafu::Snafu;
 #[derive(Debug, Snafu)]
 pub enum ParseError {
     /// Error parsing hex string
-    #[snafu(display("GameShark code integer parse: {}", source))]
+    #[snafu(display("{}: GameShark code integer parse: {}", code_line, source))]
     ParseIntError {
+        /// Line that failed to parse
+        code_line: String,
         /// Error parsing the integer
         source: std::num::ParseIntError,
     },
 
     /// Error with general code format
-    #[snafu(display("GameShark code format error"))]
-    FormatError,
+    #[snafu(display("{}: GameShark code format error", code_line))]
+    FormatError {
+        /// Line that failed to parse
+        code_line: String,
+    },
 
     /// Unsupported GameShark code type
-    #[snafu(display("Unknown GameShark code type"))]
-    CodeTypeError,
+    #[snafu(display("{}: Unknown GameShark code type '{:2x}'", code_line, code_type))]
+    CodeTypeError {
+        /// Line that failed to parse
+        code_line: String,
+        /// Code type that isn't known
+        code_type: u8,
+    },
 }
 
 /// A parsed line of a Nintendo 64 GameShark code
@@ -166,23 +176,27 @@ impl FromStr for CodeLine {
         // Split `TTXXXXXX YYYY` into `TTXXXXXX` and `YYYY`
         let tokens = s.split_whitespace().collect::<Vec<&str>>();
         let (type_addr, value) = if let [type_addr, value] = *tokens.as_slice() {
-            Ok((type_addr, value))
+            (type_addr, value)
         } else {
-            Err(ParseError::FormatError)
-        }?;
+            return Err(ParseError::FormatError {
+                code_line: s.to_owned(),
+            });
+        };
 
-        ensure!(type_addr.len() == 8, FormatError);
-        ensure!(value.len() == 4, FormatError);
+        ensure!(type_addr.len() == 8, FormatError { code_line: s });
+        ensure!(value.len() == 4, FormatError { code_line: s });
 
         // Parse code-type address and value
-        let type_addr = SizeInt::from_str_radix(type_addr, 0x10).context(ParseIntError)?;
-        let value16 = u16::from_str_radix(value, 0x10).context(ParseIntError)?;
+        let type_addr =
+            SizeInt::from_str_radix(type_addr, 0x10).context(ParseIntError { code_line: s })?;
+        let value16 = u16::from_str_radix(value, 0x10).context(ParseIntError { code_line: s })?;
         let value8 = value16 as u8;
 
         // Extract code type and address
         //
         // Convert `TTXXXXXX` into `TT` and `00XXXXXX`
         let code_type = type_addr >> (8 * 3);
+        let code_type = code_type as u8;
         let addr = type_addr & 0x00FFFFFF;
 
         match code_type {
@@ -210,7 +224,10 @@ impl FromStr for CodeLine {
                 addr,
                 value: value16,
             }),
-            _ => Err(ParseError::CodeTypeError),
+            code_type => Err(ParseError::CodeTypeError {
+                code_line: s.to_owned(),
+                code_type,
+            }),
         }
     }
 }
