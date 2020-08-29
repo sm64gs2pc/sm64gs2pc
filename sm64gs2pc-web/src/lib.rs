@@ -174,7 +174,7 @@ impl App {
     fn get_filename(&self) -> String {
         format!(
             "{}.patch",
-            format!("sm64gs2pc-{}", self.cheat_name).to_kebab_case()
+            format!("gameshark-{}", self.cheat_name).to_kebab_case()
         )
     }
 }
