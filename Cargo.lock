@@ -109,9 +109,9 @@ dependencies = [
 
 [[package]]
 name = "clang"
-version = "1.0.1"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "234ad892f6e5fb24637e1420bbb0e1fdb4db3069a54cbcfedc39c80638403ada"
+checksum = "4a4dbd9c43633b25f10495e0bd4bf784be76cd4a63b98c0ffc4643cf0f60f5c6"
 dependencies = [
  "clang-sys",
  "libc",
