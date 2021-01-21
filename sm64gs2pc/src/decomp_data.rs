@@ -134,7 +134,7 @@ impl DecompData {
 
                 // Load symbol and address
                 if let [empty, addr, sym] = *items.as_slice() {
-                    if empty != "" {
+                    if !empty.is_empty() {
                         continue;
                     }
                     let addr = match addr.strip_prefix("0x") {
