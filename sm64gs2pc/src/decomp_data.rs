@@ -245,7 +245,7 @@ impl DecompData {
                     },
                     _ => unimplemented!("clang entity: {:?}", entity),
                 };
-                let decl = Decl { kind, addr, name };
+                let decl = Decl { kind, name, addr };
                 decomp_data.decls.insert(addr, decl);
             }
 
