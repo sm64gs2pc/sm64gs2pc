@@ -11,7 +11,7 @@ yew = "0.18.0"
 wasm-bindgen = "0.2.73"
 web-sys = { version = "0.3.51", features = ["HtmlAnchorElement", "CssStyleDeclaration"] }
 js-sys = "0.3.51"
-heck = "0.3.2"
+heck = "0.3.3"
 
 [lib]
 crate_type = ["cdylib"]
