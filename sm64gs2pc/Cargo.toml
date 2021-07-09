@@ -13,7 +13,7 @@ keywords = ["super-mario-64", "decompilation", "nintendo-64", "gameshark", "port
 [dependencies]
 snafu = "0.6.10"
 patch = "0.5.0"
-structopt = "0.3.21"
+structopt = "0.3.22"
 lazy_static = "1.4.0"
 serde = { version = "1.0.126", features = ["derive"] }
 walkdir = { version = "2.3.2", optional = true }
