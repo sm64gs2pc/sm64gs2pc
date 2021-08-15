@@ -268,7 +268,7 @@ impl DecompData {
     ///   * The type or one of its inner types is ignored
     fn size_of_type(&self, typ: &Type) -> Result<SizeInt, ToPatchError> {
         match typ {
-            Type::AnonStruct(struct_) => self.size_of_struct(&struct_),
+            Type::AnonStruct(struct_) => self.size_of_struct(struct_),
             Type::Struct { name } => {
                 let struct_ = self.structs.get(name).context(NoStruct { name })?;
                 self.size_of_struct(struct_)
