@@ -10,7 +10,7 @@ sm64gs2pc = { path = "../sm64gs2pc" }
 yew = "0.18.0"
 wasm-bindgen = "0.2.73"
 web-sys = { version = "0.3.52", features = ["HtmlAnchorElement", "CssStyleDeclaration"] }
-js-sys = "0.3.52"
+js-sys = "0.3.53"
 heck = "0.3.3"
 
 [lib]
