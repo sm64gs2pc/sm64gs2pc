@@ -15,7 +15,7 @@ snafu = "0.6.10"
 patch = "0.5.0"
 structopt = "0.3.22"
 lazy_static = "1.4.0"
-serde = { version = "1.0.128", features = ["derive"] }
+serde = { version = "1.0.129", features = ["derive"] }
 walkdir = { version = "2.3.2", optional = true }
 clang = { version = "1.0.3", features = ["clang_10_0"], optional = true }
 bincode = "1.3.3"
