@@ -1,6 +1,6 @@
 #![recursion_limit = "512"]
 
-use heck::KebabCase;
+use heck::ToKebabCase;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use yew::prelude::*;
