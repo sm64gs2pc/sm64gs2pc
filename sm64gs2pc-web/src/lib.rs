@@ -1,5 +1,3 @@
-#![recursion_limit = "512"]
-
 use heck::ToKebabCase;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
@@ -7,9 +5,6 @@ use yew::prelude::*;
 
 /// Main app component
 struct App {
-    /// Link to self
-    link: ComponentLink<Self>,
-
     /// Name of the cheat
     cheat_name: String,
 
@@ -41,20 +36,19 @@ impl Component for App {
     type Message = Msg;
     type Properties = ();
 
-    fn create((): Self::Properties, link: ComponentLink<Self>) -> Self {
+    fn create(_: &Context<Self>) -> Self {
         App {
-            link,
             cheat_name: String::new(),
             gameshark_code: String::new(),
             output: Err(String::from("No code entered")),
         }
     }
 
-    fn change(&mut self, (): Self::Properties) -> bool {
+    fn changed(&mut self, _: &Context<Self>) -> bool {
         false
     }
 
-    fn update(&mut self, msg: Msg) -> ShouldRender {
+    fn update(&mut self, _: &Context<Self>, msg: Msg) -> bool {
         match msg {
             Msg::InputCheatName { cheat_name } => self.cheat_name = cheat_name,
             Msg::InputGameSharkCode { gameshark_code } => self.gameshark_code = gameshark_code,
@@ -68,7 +62,7 @@ impl Component for App {
         true
     }
 
-    fn view(&self) -> Html {
+    fn view(&self, ctx: &Context<Self>) -> Html {
         let output = match &self.output {
             Ok(patch) => html! {
                 <pre style="color: blue"> { patch } </pre>
@@ -118,23 +112,27 @@ impl Component for App {
                 <input
                     type="text"
                     placeholder="Cheat name"
-                    oninput=self.link.callback(|input_data: InputData| {
-                        Msg::InputCheatName { cheat_name: input_data.value }
-                    })
+                    oninput={
+                        ctx.link().callback(|input: InputEvent| {
+                            Msg::InputCheatName { cheat_name: input.data().unwrap() }
+                        })
+                    }
                 />
                 <br />
                 // Gameshark code input
                 <textarea
                     placeholder="GameShark code"
-                    oninput=self.link.callback(|input_data: InputData| {
-                        Msg::InputGameSharkCode { gameshark_code: input_data.value }
-                    })
+                    oninput={
+                        ctx.link().callback(|input: InputEvent| {
+                            Msg::InputGameSharkCode { gameshark_code: input.data().unwrap() }
+                        })
+                    }
                 />
                 <br />
                 // Patch download button
                 <button
-                    disabled=self.output.is_err()
-                    onclick=self.link.callback(|_| Msg::DownloadPatch)
+                    disabled={ self.output.is_err() }
+                    onclick={ ctx.link().callback(|_| Msg::DownloadPatch) }
                 >
                     { format!("Download {}", self.get_filename()) }
                 </button>
@@ -224,5 +222,5 @@ fn download_text_file(filename: &str, file_text: &str) {
 /// App entry point
 #[wasm_bindgen(start)]
 pub fn run_app() {
-    yew::start_app::<App>()
+    yew::start_app::<App>();
 }
