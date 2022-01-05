@@ -183,13 +183,13 @@ impl FromStr for CodeLine {
             });
         };
 
-        ensure!(type_addr.len() == 8, FormatError { code_line: s });
-        ensure!(value.len() == 4, FormatError { code_line: s });
+        ensure!(type_addr.len() == 8, FormatSnafu { code_line: s });
+        ensure!(value.len() == 4, FormatSnafu { code_line: s });
 
         // Parse code-type address and value
         let type_addr =
-            SizeInt::from_str_radix(type_addr, 0x10).context(ParseIntError { code_line: s })?;
-        let value16 = u16::from_str_radix(value, 0x10).context(ParseIntError { code_line: s })?;
+            SizeInt::from_str_radix(type_addr, 0x10).context(ParseIntSnafu { code_line: s })?;
+        let value16 = u16::from_str_radix(value, 0x10).context(ParseIntSnafu { code_line: s })?;
         let value8 = value16 as u8;
 
         // Extract code type and address
