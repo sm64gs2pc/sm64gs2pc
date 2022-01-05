@@ -270,7 +270,7 @@ impl DecompData {
         match typ {
             Type::AnonStruct(struct_) => self.size_of_struct(struct_),
             Type::Struct { name } => {
-                let struct_ = self.structs.get(name).context(NoStruct { name })?;
+                let struct_ = self.structs.get(name).context(NoStructSnafu { name })?;
                 self.size_of_struct(struct_)
             }
             Type::Array {
@@ -313,7 +313,7 @@ impl DecompData {
             .values()
             .rev()
             .find(|decl| decl.addr <= addr)
-            .context(NoDecl { addr })?;
+            .context(NoDeclSnafu { addr })?;
 
         // Get the declaration's type
         let typ = match &decl.kind {
@@ -349,7 +349,7 @@ impl DecompData {
             .iter()
             .rev()
             .find(|field| accum_addr + field.offset <= addr)
-            .context(NoField { addr })?;
+            .context(NoFieldSnafu { addr })?;
 
         let accum_addr = accum_addr + field.offset;
 
@@ -378,7 +378,7 @@ impl DecompData {
                 self.addr_and_struct_to_lvalue(accum, addr, &struct_, accum_addr)
             }
             Type::Struct { name } => {
-                let struct_ = self.structs.get(&name).context(NoStruct { name })?;
+                let struct_ = self.structs.get(&name).context(NoStructSnafu { name })?;
                 self.addr_and_struct_to_lvalue(accum, addr, struct_, accum_addr)
             }
             Type::Int { .. } | Type::Float => Ok(accum),
