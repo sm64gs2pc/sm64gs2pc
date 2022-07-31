@@ -5,7 +5,3 @@ updates:
   schedule:
     interval: daily
   open-pull-requests-limit: 10
-  ignore:
-  - dependency-name: wasm-bindgen
-    versions:
-    - 0.2.72
