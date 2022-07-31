@@ -12,7 +12,7 @@ jobs:
       matrix:
         features: ["", "--all-features"]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - run: sudo apt-get install libclang-10-dev
       - run: cargo clippy ${{ matrix.features }} -- -D warnings
 
@@ -21,14 +21,14 @@ jobs:
     name: Run cargo test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - run: cargo test
 
   cargo-fmt:
     name: Check rustfmt formatting
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - run: cargo fmt --all -- --check
 
   coveralls:
@@ -36,10 +36,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Get base ROM
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: sm64gs2pc/roms
           token: ${{ secrets.ROMS_REPO_CLONE_AND_PAGES_PUSH }}
