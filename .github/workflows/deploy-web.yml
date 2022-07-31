@@ -24,10 +24,9 @@ jobs:
         run: rm -f sm64gs2pc-web/static/pkg/.gitignore
 
       - name: Push to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@releases/v3
+        uses: JamesIves/github-pages-deploy-action@releases/v4
         with:
-          ACCESS_TOKEN: ${{ secrets.ROMS_REPO_CLONE_AND_PAGES_PUSH }}
-          REPOSITORY_NAME: sm64gs2pc/sm64gs2pc.github.io
-          BRANCH: master
-          BASE_BRANCH: master
-          FOLDER: sm64gs2pc-web/static
+          token: ${{ secrets.ROMS_REPO_CLONE_AND_PAGES_PUSH }}
+          repository-name: sm64gs2pc/sm64gs2pc.github.io
+          branch: master
+          folder: sm64gs2pc-web/static
