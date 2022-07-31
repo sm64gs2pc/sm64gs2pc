@@ -26,7 +26,7 @@ jobs:
       - name: Push to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@releases/v4
         with:
-          token: ${{ secrets.ROMS_REPO_CLONE_AND_PAGES_PUSH }}
+          ssh-key: ${{ secrets.PAGES_PUSH_SSH_KEY }}
           repository-name: sm64gs2pc/sm64gs2pc.github.io
           branch: master
           folder: sm64gs2pc-web/static
