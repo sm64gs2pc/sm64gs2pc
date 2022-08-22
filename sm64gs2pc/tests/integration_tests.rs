@@ -129,7 +129,7 @@ fn patch_convert_loader() {
     let repo = std::env::temp_dir();
 
     let decomp_data = DecompData::load(
-        &Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/baserom.us.z64")),
+        Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/baserom.us.z64")),
         &repo,
     );
 
