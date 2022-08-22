@@ -277,7 +277,7 @@ impl DecompData {
                 element_type,
                 num_elements,
             } => self
-                .size_of_type(&*element_type)
+                .size_of_type(element_type)
                 .map(|size| size * num_elements),
             Type::Int { num_bytes, .. } => Ok(*num_bytes),
             Type::Pointer { .. } => Ok(8),
