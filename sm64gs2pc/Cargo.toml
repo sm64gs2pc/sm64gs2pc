@@ -11,7 +11,7 @@ categories = ["games"]
 keywords = ["super-mario-64", "decompilation", "nintendo-64", "gameshark", "port"]
 
 [dependencies]
-snafu = "0.7.1"
+snafu = "0.7.2"
 patch = "0.6.0"
 structopt = "0.3.26"
 lazy_static = "1.4.0"
