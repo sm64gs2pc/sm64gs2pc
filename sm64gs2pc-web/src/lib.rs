@@ -1,6 +1,8 @@
 use heck::ToKebabCase;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
+use web_sys::HtmlInputElement;
+use web_sys::HtmlTextAreaElement;
 use yew::prelude::*;
 
 /// Main app component
@@ -113,8 +115,9 @@ impl Component for App {
                     type="text"
                     placeholder="Cheat name"
                     oninput={
-                        ctx.link().callback(|input: InputEvent| {
-                            Msg::InputCheatName { cheat_name: input.data().unwrap() }
+                        ctx.link().callback(|event: InputEvent| {
+                            let input: HtmlInputElement = event.target_unchecked_into();
+                            Msg::InputCheatName { cheat_name: input.value() }
                         })
                     }
                 />
@@ -123,8 +126,9 @@ impl Component for App {
                 <textarea
                     placeholder="GameShark code"
                     oninput={
-                        ctx.link().callback(|input: InputEvent| {
-                            Msg::InputGameSharkCode { gameshark_code: input.data().unwrap() }
+                        ctx.link().callback(|event: InputEvent| {
+                            let input: HtmlTextAreaElement = event.target_unchecked_into();
+                            Msg::InputGameSharkCode { gameshark_code: input.value() }
                         })
                     }
                 />
