@@ -13,7 +13,7 @@ jobs:
         features: ["", "--all-features"]
     steps:
       - uses: actions/checkout@v3
-      - run: sudo apt-get install libclang-10-dev
+      - run: sudo apt-get install libclang-dev
       - run: cargo clippy ${{ matrix.features }} -- -D warnings
 
   # `cargo test --all-features` is handled by the coveralls job
@@ -51,7 +51,7 @@ jobs:
       - name: Install dependencies
         run: |
           # sm64gs2pc dependencies
-          sudo apt-get install libclang-10-dev
+          sudo apt-get install libclang-dev
           # sm64 decomp build dependencies:
           # https://github.com/n64decomp/sm64#debian--ubuntu
           sudo apt install -y binutils-mips-linux-gnu build-essential git libcapstone-dev pkgconf python3
