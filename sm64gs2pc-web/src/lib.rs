@@ -44,7 +44,7 @@ impl Component for App {
         }
     }
 
-    fn changed(&mut self, _: &Context<Self>) -> bool {
+    fn changed(&mut self, _: &Context<Self>, _: &()) -> bool {
         false
     }
 
@@ -222,5 +222,5 @@ fn download_text_file(filename: &str, file_text: &str) {
 /// App entry point
 #[wasm_bindgen(start)]
 pub fn run_app() {
-    yew::start_app::<App>();
+    yew::Renderer::<App>::new().render();
 }
